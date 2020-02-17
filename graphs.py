@@ -3,13 +3,12 @@ import random
 import matplotlib
 import matplotlib.pyplot as plt
 
-nodes = range(10,100,10)
+nodes = range(10,13,1)
 edges = []
 minEdges = []
 maxEdges = []
 completeEdges = []
 
-print(ncr(10,2))
 for n in nodes:
     total = 0
     r = 10
@@ -32,8 +31,9 @@ for n in nodes:
     plt.show()
 
 
-plt.plot(nodes, edges)
-plt.plot(nodes, minEdges)
-plt.plot(nodes, maxEdges)
-plt.plot(nodes, completeEdges)
+plt.plot(nodes, edges, label='average')
+plt.plot(nodes, minEdges, label='min')
+plt.plot(nodes, maxEdges, label='max')
+plt.plot(nodes, completeEdges, label='complete')
+plt.legend(title='Edges:')
 plt.show()
