@@ -1,4 +1,8 @@
 import sys
+import networkx as nx
+import matplotlib.pyplot as plt
+import graphGen
+import simulator
 
 class Node:
     # - neigbours: [1,2,...]
@@ -17,22 +21,7 @@ class Node:
             self.visited = True
         return res
 
-
-def connector(graph):
-    nodes = {}
-    distances = {}
-    for n in graph:
-        edges = [e for e in graph.edges(n)]
-        #print("edg ", edges)
-        neighbours = [n for n in graph.neighbors(n)]
-        #print("nei ", neighbours)
-        nodes[n] = Node(neighbours)
-        for e in edges:
-            distances[e] = graph.get_edge_data(e[0], e[1])['weight']
-    #print(distances)
-    return nodes, distances
-        
-              
+         
 class Sim:
     # - nodes: {0: Node, 1: Node, 2: Node}
     # - distances: {(0,1): 103, (0,2): 40, ...}
@@ -57,10 +46,9 @@ class Sim:
             # - find in 'self.pending' the next message that should be delivered
             tmp_future_time = sys.maxsize
             for i in range(len(self.pending)):
-                tmp_sum = self.current_time + self.pending[i][0]
-                if(tmp_sum < tmp_future_time):
+                if(self.pending[i][0] <= tmp_future_time):
                     index = i
-                    tmp_future_time = tmp_sum
+                    tmp_future_time = self.pending[i][0]
             # - handle such message in its destination
             info = self.pending[index][1]
             src, dst, msg = info[0], info[1], info[2] 
@@ -71,10 +59,65 @@ class Sim:
                 for r in res:
                     # > set the delay according to 'self.distances'
                     tmp_delay = self.distances[(dst, r[0])]
-                    messages_to_neighbours = (tmp_delay, (i, r[0], r[1]))
+                    messages_to_neighbours = (self.current_time + tmp_delay, (i, r[0], r[1]))
                     # - schedule new messages
                     self.pending.append(messages_to_neighbours)
                     
                 # - update 'self.current_time'
                 self.current_time += self.pending[index][0]
+        return self.current_time
         print("finished!")
+
+
+class Broadcast(Node):
+    def __init__(self, neighbors, fanout):
+        self.neighbours = neighbours
+        self.visited = False
+        self.fanout = fanout
+
+    def handle(self, src, msg):
+        res = []
+        if(self.visited == False):
+            print("visited!", self.neighbours)
+            n = self.neighbours.len
+            if(n == 0):
+                for i in self.neighbours:
+                    res.append((i, "broadcast"))
+            else:
+                for i in self.neighbours[:self.fanout]:
+                    res.append((i, "fanout" + self.fanout))
+            self.visited = True
+        return res
+
+#dado um grafo G simula N tentativas com N random raizes e calcula Min, Media, Max.
+# testar com vários tipos de grafos 
+# def analysis():
+
+
+def connector(graph, type = 'normal'):
+    nodes = {}
+    distances = {}
+    for n in graph:
+        edges = [e for e in graph.edges(n)]
+        #print("edg ", edges)
+        neighbours = [n for n in graph.neighbors(n)]
+        #print("nei ", neighbours)
+        if (type == "normal"):
+            nodes[n] = Node(neighbours)
+        elif (type == "broadcast"):
+            nodes[n] = Broadcast(neighbours)
+        for e in edges:
+            distances[e] = graph.get_edge_data(e[0], e[1])['weight']
+    #print(distances)
+    return nodes, distances
+
+
+def main():
+    G = graphGen.randomG() # gera grafo
+    nodes, distances = simulator.connector(G) # converte grafo gerado em input para simulador
+    sim = simulator.Sim(nodes, distances) # cria classe
+    sim.start(0, "diz olá")  # primeira msg/inicio
+    nx.draw(G, with_labels=True)
+
+if __name__ == "__main__":
+    main()
