@@ -15,7 +15,7 @@ class Node:
     def handle(self, src, msg):
         res = []
         if(self.visited == False):
-            print("visited!", self.neighbours)
+            # print("visited!", self.neighbours)
             for i in self.neighbours:
                 res.append((i, "ola")) 
             self.visited = True
@@ -39,7 +39,7 @@ class Sim:
         self.pending.append(event)
 
         # run the simulation loop
-        self.run_loop()
+        return self.run_loop()
 
     def run_loop(self):
         while len(self.pending) > 0:
@@ -53,20 +53,22 @@ class Sim:
             info = self.pending[index][1]
             src, dst, msg = info[0], info[1], info[2] 
             res = self.nodes[dst].handle(src, msg)
+            self.current_time = self.pending[0][0]
             del self.pending[index]
             # - nodo não foi visitado
             if(len(res) > 0):
                 for r in res:
                     # > set the delay according to 'self.distances'
                     tmp_delay = self.distances[(dst, r[0])]
-                    messages_to_neighbours = (self.current_time + tmp_delay, (i, r[0], r[1]))
+                    messages_to_neighbours = (self.current_time + tmp_delay, (dst, r[0], r[1]))
                     # - schedule new messages
                     self.pending.append(messages_to_neighbours)
                     
+                print(self.pending)
                 # - update 'self.current_time'
-                self.current_time += self.pending[index][0]
+                print("c_time: ", self.current_time)
+                
         return self.current_time
-        print("finished!")
 
 
 class Broadcast(Node):
@@ -78,7 +80,6 @@ class Broadcast(Node):
     def handle(self, src, msg):
         res = []
         if(self.visited == False):
-            print("visited!", self.neighbours)
             n = self.neighbours.len
             if(n == 0):
                 for i in self.neighbours:
@@ -102,9 +103,9 @@ def connector(graph, type = 'normal'):
         #print("edg ", edges)
         neighbours = [n for n in graph.neighbors(n)]
         #print("nei ", neighbours)
-        if (type == "normal"):
+        if (type == 'normal'):
             nodes[n] = Node(neighbours)
-        elif (type == "broadcast"):
+        elif (type == 'broadcast'):
             nodes[n] = Broadcast(neighbours)
         for e in edges:
             distances[e] = graph.get_edge_data(e[0], e[1])['weight']
@@ -113,10 +114,11 @@ def connector(graph, type = 'normal'):
 
 
 def main():
-    G = graphGen.randomG() # gera grafo
+    G = graphGen.randomG(10, 10) # gera grafo
     nodes, distances = simulator.connector(G) # converte grafo gerado em input para simulador
     sim = simulator.Sim(nodes, distances) # cria classe
-    sim.start(0, "diz olá")  # primeira msg/inicio
+    time = sim.start(0, "diz olá")  # primeira msg/inicio
+    print("finished with: ", time)
     nx.draw(G, with_labels=True)
 
 if __name__ == "__main__":

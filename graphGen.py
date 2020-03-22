@@ -3,18 +3,22 @@ import random
 
 
 
-def randomG(size = 10):
+def randomG(size = 10, w = None):
     G = nx.Graph()
     G.add_nodes_from(range(size))
 
     while nx.is_connected(G) == False:
         [a,b] = random.sample(set(G.nodes()), 2)
         if not G.has_edge(a,b) and a != b:
-            G.add_edge(a,b, weight = random.randint(0,100)) 
+            if w == None:
+                G.add_edge(a,b, weight = random.randint(0,100)) 
+            else:
+                G.add_edge(a,b, weight = w) 
+            
 
     return G
 
-def preferentialG(size = 10):
+def preferentialG(size = 10, w = None):
     G = nx.empty_graph(size)
     G.name="nodes: %d"%(size)
 
@@ -27,7 +31,10 @@ def preferentialG(size = 10):
 
         # Se forem diferentes e não existir já ligação, cria ligação
         if a != b and not G.has_edge(a,b):
-            G.add_edge(a,b, weight = random.randint(0,100)) 
+            if w == None:
+                G.add_edge(a,b, weight = random.randint(0,100)) 
+            else:
+                G.add_edge(a,b, weight = w)  
             # Adicionar nodes ligados
             repeated_nodes.append(a)
             repeated_nodes.append(b)
