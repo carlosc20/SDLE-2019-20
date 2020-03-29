@@ -44,11 +44,11 @@ class Sim:
                 res = node.handleTimeout(event.eventId)
             elif isinstance(event, nodes.EagerMessage):
                 res = node.handleEager(event)
-            elif isinstance(event, node.LazyMessage):
+            elif isinstance(event, nodes.LazyMessage):
                 res = node.handleLazy(event)
-            elif isinstance(event, node.SendRequest):
+            elif isinstance(event, nodes.SendRequest):
                 res = node.handleSendRequest(event)
-            elif isinstance(event, node.PayloadDelivery):
+            elif isinstance(event, nodes.PayloadDelivery):
                 res = node.handlePayload(event)
             self.computeDelays(res, index)
                 
@@ -60,17 +60,17 @@ class Sim:
         # - nodo não foi visitado
         if not isinstance(events, list):
             events = [events]
-            if len(events) > 0:
-                for e in events:
-                    # > set the delay according to 'self.distances'
-                    tmp_delay = self.distances[(e.getSrc(), e.getDst())]
-                    messages_to_neighbours = (self.current_time + tmp_delay, e)
-                    # - schedule new messages
-                    self.pending.append(messages_to_neighbours)
+        if len(events) > 0:
+            for e in events:
+                # > set the delay according to 'self.distances'
+                tmp_delay = self.distances[(e.getSrc(), e.getDst())]
+                messages_to_neighbours = (self.current_time + tmp_delay, e)
+                # - schedule new messages
+                self.pending.append(messages_to_neighbours)
 
-                print(self.pending)
-                # - update 'self.current_time'
-                print("c_time: ", self.current_time)
+            print(self.pending)
+            # - update 'self.current_time'
+            print("c_time: ", self.current_time)
 
 
 # dado um grafo G simula N tentativas com N random raizes e calcula Min, Media, Max.

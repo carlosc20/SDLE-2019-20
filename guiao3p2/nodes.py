@@ -34,12 +34,14 @@ class BroadcastNode(Node):
         rootid = emsg.identifier.rootid
         seqid = emsg.identifier.seqid
         payload = emsg.payload
+        print(len(self.neighbours))
         if not self.visited:
-            if self.fanout < len(self.neighbours):
-                for i in self.neighbours[self.fanout:-1]:
-                    res.append(LazyMessage((self.id, i), rootid, seqid))
-            for i in self.neighbours[:self.fanout - 1]:
+            for i in self.neighbours[self.fanout:]:
+                print("oioio", i)
+                res.append(LazyMessage((self.id, i), rootid, seqid))
+            for i in self.neighbours[:self.fanout]:
                 res.append(EagerMessage((self.id, i), rootid, seqid, payload))
+                print("olol", i)
             self.visited = True
         return res
 
@@ -63,8 +65,8 @@ class TimeoutNode(BroadcastNode):
         return EagerMessage((None, self.id), self.id, self.msgCount, payload)
 
     def handleEager(self, eagerMsg):
+        print("eager arrived")
         if self.fanout < len(self.neighbours):
-            
             self.cachedMessages[eagerMsg.identifier] = eagerMsg.payload
         res = super().handle(eagerMsg)
         return res
@@ -76,6 +78,7 @@ class TimeoutNode(BroadcastNode):
         return Timeout(self.id, self.eventCount)
 
     def handleTimeout(self, eventId):
+        # TODO verificar se já recebeu
         action = self.innerEvents[eventId]
         return action
 
