@@ -10,7 +10,7 @@ def randomG(size=10, w=None):
         [a,b] = random.sample(set(G.nodes()), 2)
         if not G.has_edge(a, b) and a != b:
             if w == None:
-                G.add_edge(a, b, weight=random.randint(0, 100))
+                G.add_edge(a, b, weight=random.randint(0, 20))
             else:
                 G.add_edge(a, b, weight=w)
     return G
@@ -29,7 +29,7 @@ def preferentialG(size=10, w=None):
         # Se forem diferentes e não existir já ligação, cria ligação
         if a != b and not G.has_edge(a, b):
             if w == None:
-                G.add_edge(a, b, weight=random.randint(0, 100))
+                G.add_edge(a, b, weight=random.randint(0, 20))
             else:
                 G.add_edge(a, b, weight=w)
             # Adicionar nodes ligados

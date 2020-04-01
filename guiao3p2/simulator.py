@@ -3,12 +3,20 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import graphGen
 import nodes
+import random
      
 
+class Link:
+    def __init__(self, delay, loss_rate):
+        self.loss_rate = loss_rate
+        self.delay = delay
+
+
 class Sim:
-    # - nodes: {0: Node, 1: Node, 2: Node}
-    # - distances: {(0,1): 103, (0,2): 40, ...}
-    def __init__(self, nodestore, distances):
+    # - nodes: {0: Node, 1: Node, 2: Node, ...}
+    # - distances: {(0,1): Link, (0,2): Link, ...}
+    def __init__(self, nodestore, distances, loss_rate):
+        self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
         self.nodestore = nodestore
         self.distances = distances
         self.current_time = 0
@@ -40,38 +48,58 @@ class Sim:
             # works with timeout (src == dst)
             node = self.nodestore[event.getDst()]
             res = []
-            if isinstance(event, nodes.Timeout):
-                res = node.handleTimeout(event.eventId)
-            elif isinstance(event, nodes.EagerMessage):
-                res = node.handleEager(event)
-            elif isinstance(event, nodes.LazyMessage):
-                res = node.handleLazy(event)
-            elif isinstance(event, nodes.SendRequest):
-                res = node.handleSendRequest(event)
-            elif isinstance(event, nodes.PayloadDelivery):
-                res = node.handlePayload(event)
-            self.computeDelays(res, index)
-                
+            if type(event) is nodes.Timeout:
+                sendReq = node.handleTimeout(event.eventId)
+                self.current_time = self.calcTmpTime(index)
+                self.putSingular(index, sendReq)
+
+            elif random.random() > self.loss_rate:
+                if type(event) is nodes.EagerMessage:
+                    res = node.handleEager(event)
+                    self.putList(index, res)
+
+                elif type(event) is nodes.LazyMessage:
+                    timeout = node.handleLazy(event)
+                    self.putTimeout(index, timeout)
+
+                elif type(event) is nodes.SendRequest:
+                    p = node.handleSendRequest(event)
+                    self.current_time = self.calcTmpTime(index)
+                    self.putSingular(index, p)
+
+                elif type(event) is nodes.PayloadDelivery:
+                    self.current_time = self.calcTmpTime(index)
+                    node.handlePayload(event)
+            self.pendingPrint()
         return self.current_time
 
-    def computeDelays(self, events, index):
-        self.current_time = self.pending[0][0]
+
+    def calcTmpTime(self, index):
+        tmp_time = self.pending[index][0]
         del self.pending[index]
-        # - nodo não foi visitado
-        if not isinstance(events, list):
-            events = [events]
-        if len(events) > 0:
-            for e in events:
-                # > set the delay according to 'self.distances'
-                tmp_delay = self.distances[(e.getSrc(), e.getDst())]
-                messages_to_neighbours = (self.current_time + tmp_delay, e)
-                # - schedule new messages
-                self.pending.append(messages_to_neighbours)
+        return tmp_time
 
-            print(self.pending)
-            # - update 'self.current_time'
-            print("c_time: ", self.current_time)
+    def putTimeout(self, index, event):
+        self.current_time = self.calcTmpTime(index)
+        self.pending.append((self.current_time + event.time, event))
 
+    def putSingular(self, index, event):
+        link = self.distances[(event.getSrc(), event.getDst())]
+        if random.random() > link.loss_rate:
+            # - schedule new messages
+            self.pending.append((self.current_time + link.delay, event))
+
+    def putList(self, index, events):
+        self.current_time = self.calcTmpTime(index)
+        for e in events:
+            # > set the delay according to 'self.distances'
+            self.putSingular(index, e)
+        print("c_time: ", self.current_time)
+
+    def pendingPrint(self):
+        print("pending.....")
+        for e in self.pending:
+            print(e[0], vars(e[1]))
 
 # dado um grafo G simula N tentativas com N random raizes e calcula Min, Media, Max.
 # testar com vários tipos de grafos 
@@ -92,7 +120,9 @@ def connector(graph, type='normal', **kwargs):
         elif type == 'timeout':
             nodestore[n] = nodes.TimeoutNode(neighbours, n, kwargs.get('fanout'))
         for e in edges:
-            distances[e] = graph.get_edge_data(e[0], e[1])['weight']
+            # TODO parametrizar loss_rate
+            # print(e, " distances ", graph.get_edge_data(e[0], e[1])['weight'])
+            distances[e] = Link(graph.get_edge_data(e[0], e[1])['weight'], 0)
     # print(distances)
     return nodestore, distances
 
@@ -100,7 +130,7 @@ def connector(graph, type='normal', **kwargs):
 def main():
     g = graphGen.randomG(10, 10)  # gera grafo
     nodestore, distances = connector(g, 'timeout', fanout=1)  # converte grafo gerado em input para simulador
-    sim = Sim(nodestore, distances)  # cria classe
+    sim = Sim(nodestore, distances, 0)  # cria classe
     time = sim.start(0, "diz olá")  # primeira msg/inicio
     print("finished with: ", time)
     nx.draw(g, with_labels=True)
