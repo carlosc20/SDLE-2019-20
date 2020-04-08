@@ -23,8 +23,12 @@ class Sim:
         self.pending = [] # [(delay, (src, dst, msg))]
 
     def start(self, starting_node, initial_msg):
+        
+        # initialize garbagecollection
+        for node in self.nodestore.values():
+            self.putTimeout(node.createGarbageCollectionEvent())
+
         # schedule first event
-        # for i in self.nodes: -> não sei se passei mal ou o stor queria isto
         sNode = self.nodestore[starting_node]
 
         event = (0, sNode.createMsg(initial_msg))
@@ -42,34 +46,49 @@ class Sim:
                 if self.pending[i][0] <= tmp_future_time:
                     index = i
                     tmp_future_time = self.pending[i][0]
-            # - handle event in its destination
+
             event = self.pending[index][1]
 
             # works with timeout (src == dst)
             node = self.nodestore[event.getDst()]
             res = []
+            # update time
+            self.current_time = self.calcTmpTime(index)
+            # - handle event in its destination
             if type(event) is nodes.Timeout:
-                sendReq = node.handleTimeout(event.eventId)
-                self.current_time = self.calcTmpTime(index)
-                self.putSingular(index, sendReq)
+                action = node.handleTimeout(event.eventId)
+                if type(action) is nodes.SendRequest:
+                    self.putSingular(action)
+                else:
+                    self.putTimeout(action)
 
             elif random.random() > self.loss_rate:
                 if type(event) is nodes.EagerMessage:
                     res = node.handleEager(event)
-                    self.putList(index, res)
+                    self.putList(res[0])
+                    self.putSingular(res[1])
 
                 elif type(event) is nodes.LazyMessage:
-                    timeout = node.handleLazy(event)
-                    self.putTimeout(index, timeout)
+                    res = node.handleLazy(event)
+                    self.putTimeout(res[0])
+                    self.putSingular(res[1])
 
                 elif type(event) is nodes.SendRequest:
                     p = node.handleSendRequest(event)
-                    self.current_time = self.calcTmpTime(index)
-                    self.putSingular(index, p)
+                    self.putSingular(p)
 
                 elif type(event) is nodes.PayloadDelivery:
-                    self.current_time = self.calcTmpTime(index)
                     node.handlePayload(event)
+
+                elif type(event) is nodes.Acknowledgment:
+                    node.handleAck(event)
+
+                elif type(event) is nodes.GarbageCollection:
+                    res = node.handleGarbageCollection()
+                    self.putList(res[0])
+                    if res[1] is not None:
+                        self.putTimeout(res[1])
+
             self.pendingPrint()
         return self.current_time
 
@@ -79,21 +98,20 @@ class Sim:
         del self.pending[index]
         return tmp_time
 
-    def putTimeout(self, index, event):
-        self.current_time = self.calcTmpTime(index)
+    def putTimeout(self, event):
         self.pending.append((self.current_time + event.time, event))
 
-    def putSingular(self, index, event):
-        link = self.distances[(event.getSrc(), event.getDst())]
-        if random.random() > link.loss_rate:
-            # - schedule new messages
-            self.pending.append((self.current_time + link.delay, event))
+    def putSingular(self, event):
+        if event is not None:
+            link = self.distances[(event.getSrc(), event.getDst())]
+            if random.random() > link.loss_rate:
+                # - schedule new messages
+                self.pending.append((self.current_time + link.delay, event))
 
-    def putList(self, index, events):
-        self.current_time = self.calcTmpTime(index)
+    def putList(self, events):
         for e in events:
             # > set the delay according to 'self.distances'
-            self.putSingular(index, e)
+            self.putSingular(e)
         print("c_time: ", self.current_time)
 
     def pendingPrint(self):
