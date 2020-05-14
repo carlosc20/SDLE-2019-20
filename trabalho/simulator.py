@@ -5,27 +5,24 @@ import graphGen
 import nodes
 import random
 
-# Carlos: Fazer mudanças de ligações no grafo em runtime
-
-class Link:
-    def __init__(self, delay, loss_rate):
-        self.loss_rate = loss_rate
-        self.delay = delay
+# TODO: Fazer mudanças de ligações no grafo em runtime
 
 
 class Simulator:
-    # - nodes: {0: Node, 1: Node, 2: Node, ...}
+
     def __init__(self, nodes, loss_rate):
         self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
-        self.nodes = nodes
+        self.nodes = nodes # dict: nr -> Node
         self.current_time = 0
-        self.pending = [] # [(delay, (src, dst, msg))]
+        self.pending = [] # [(delay, Message]
 
 
-    def start(self, starting_node, initial_msg):
-        
-        # eventos inicias
-        # self.pending.append(event)
+
+    def start(self):
+        # primeira ronda de mensagens
+        for n in self.nodes:
+            messages = n.generate_messages()
+            self.pending.append(messages)
 
         # run the simulation loop
         return self.run_loop()
@@ -34,42 +31,73 @@ class Simulator:
 
     def run_loop(self):
         while len(self.pending) > 0:
-            # - find in 'self.pending' the next message that should be delivered
-            tmp_future_time = sys.maxsize
-            index = 0
-            for i in range(len(self.pending)):
-                if self.pending[i][0] <= tmp_future_time:
-                    index = i
-                    tmp_future_time = self.pending[i][0]
 
-            event = self.pending[index][1]
+            # evento com menor delay, delay necessario?
+            messages, time = self._next_events()
+            self.current_time = time
+            # dict destino -> lista de msgs
+            group = {}
+            for m in messages:
+                # drop message
+                if random.random() > self.loss_rate:
+                    break
 
-            # works with timeout (src == dst)
-            node = self.nodes[event.getDst()]
-            res = []
-            # update time
-            self.current_time = self.calcTmpTime(index)
-            # - handle event in its destination
-            if type(event) is nodes.Timeout:
-                action = node.handleTimeout(event.eventId)
-                if type(action) is nodes.SendRequest:
-                    self.putSingular(action)
-                else:
-                    self.putTimeout(action)
+                g = group[m.dst]
+                if not g:
+                    g = []
 
-            elif random.random() > self.loss_rate:
-                res = node.handle_message(event)
+                g.append(m)
 
-            self.pending.append(res)
+            new = []  
+            for dst, msgs in group.items():
+                node = self.nodes[dst]
+                gen = node.handle_messages(msgs)
+                new.append(gen)
+
+
+            # TODO: por delay nos events
+            self.pending.append(new)
             self.pendingPrint()
 
         return self.current_time
 
+    # vai buscar e remove do pending as mensagens com menor delay
+    # devolve lista de mensagens e delay
+    def _next_messages(self):
+        time = sys.maxsize
+        messages = []
+        for m in self.pending:
 
-    def calcTmpTime(self, index):
-        tmp_time = self.pending[index][0]
-        del self.pending[index]
-        return tmp_time
+            if m[0] < time:
+                messages = []
+                time = m[0]
+
+            if m[0] == time:
+                messages.append(m[1])
+        
+        for m in messages:
+            self.pending.remove(m)
+
+        return messages, time
+
+
+    # TODO antigo, remover se não for preciso:
+    def putTimeout(self, event):
+        self.pending.append((self.current_time + event.time, event))
+
+    def putSingular(self, event):
+        if event is not None:
+            link = self.distances[(event.getSrc(), event.getDst())]
+            if random.random() > link.loss_rate:
+                # - schedule new messages
+                self.pending.append((self.current_time + link.delay, event))
+
+    def putList(self, events):
+        for e in events:
+            # > set the delay according to 'self.distances'
+            self.putSingular(e)
+        print("c_time: ", self.current_time)
+
 
     def pendingPrint(self):
         print("pending.....")
