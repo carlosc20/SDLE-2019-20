@@ -33,18 +33,19 @@ class Simulator:
         while len(self.pending) > 0:
 
             # evento com menor delay, delay necessario?
-            messages, time = self._next_events()
+            messages, time = self._next_messages()
             self.current_time = time
             # dict destino -> lista de msgs
             group = {}
             for m in messages:
                 # drop message
-                if random.random() > self.loss_rate:
-                    break
+                if random.random() <= self.loss_rate:
+                    continue
 
-                g = group[m.dst]
+                g = group.get(m.dst)
                 if not g:
                     g = []
+                    group[m.dst] = g
 
                 g.append(m)
 
