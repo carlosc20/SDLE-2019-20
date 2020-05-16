@@ -5,8 +5,8 @@ class FlowNode:
         self.input = input
         self.neighbours = neighbours
         self.degree = len(neighbours)
-        self.flows = [0] * self.degree
-        self.estimates = [0] * self.degree
+        self.flows = dict.fromkeys(neighbours, 0)
+        self.estimates = dict.fromkeys(neighbours, 0)
         self.local_estimate = input
 
 
@@ -17,7 +17,7 @@ class FlowNode:
         
         flowSum = 0
         
-        for (n, f, e) in zip(self.neighbours, self.flows, self.estimates):
+        for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
             msgs.append(FlowMessage(self.id, n, f, e))
             flowSum += f
             
@@ -27,17 +27,17 @@ class FlowNode:
     def generate_messages_termination_rmse(self):
         msgs = []
 
-        for (n, f, e) in zip(self.neighbours, self.flows, self.estimates):
+        for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
             msgs.append(FlowMessage(self.id, n, f, e))
             
         return msgs, self.local_estimate
 
     def handle_messages(self, msgs):
 
-        received = {} 
+        #received = {} 
 
         for m in msgs:
-            received.add(m.src)
+            #received.add(m.src)
             self._handle_message(m)
         
         # mensagens perdidas -> se não chegou nada de x, por exemplo, flow/estimate x permanece com o valor anterior, mesmo sendo 0
@@ -57,12 +57,19 @@ class FlowNode:
         self.estimates[sender] = msg.estimate
 
     def _state_transition(self):
-        self.local_estimate = (input - sum(self.flows) + sum(self.estimates)) / (len(self.neighbours) + 1)
-
-        for (f, e) in zip(self.flows, self.estimates):
-            f += (self.local_estimate + e)
-            e = self.local_estimate
+        sum_flows = sum(self.flows.values())
+        sum_estimates = sum(self.estimates.values())
+        self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
+            
         
+        
+        for (fk, (ek, ev)) in zip(self.flows.keys(), self.estimates.items()):
+            self.flows[fk] += (self.local_estimate - ev)
+            self.estimates[ek] = self.local_estimate
+        
+        print("node: ", self.id)
+        print("Flows: ",self.flows)
+        print("Estimates: ", self.estimates)
 
 class Message:
     def __init__(self, src, dst):

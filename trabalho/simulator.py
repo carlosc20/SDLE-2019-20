@@ -11,13 +11,14 @@ import math
 
 class Simulator:
 
-    def __init__(self, nodes, distances, loss_rate, target_value = None, target_rmse = None):
+    def __init__(self, nodes, distances, loss_rate, input_sum = None, target_rmse = None, aggregation = 'AVERAGE'):
         self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
         self.nodes = nodes # dict: nr -> Node
         self.distances = distances
         self.current_time = 0
-        self.pending = [] # [(delay, Message]
-        self.target_value = target_value
+        self.pending = [] # [Event]
+        if aggregation == 'AVERAGE':
+            self.target_value = input_sum / len(self.nodes)
         self.target_rmse = target_rmse
         
         # para o sincrono
@@ -35,17 +36,15 @@ class Simulator:
             else:
                 messages += n.generate_messages_termination_rmse()[0]
                 
-        self.pending.append(self._create_events(messages))
+        self.pending += self._create_events(messages)
 
         # run the simulation loop
         return self.run_loop()
 
 
     def _create_events(self, message_list):
- 
         events = []
         for n in message_list:
-            print(n)
             link_delay = self.distances[(n.src, n.dst)]
             events.append(Event(n, self.current_time + link_delay))
             
@@ -53,7 +52,7 @@ class Simulator:
     
     def run_loop(self):
         while len(self.pending) > 0:
-
+            #print(self.pending)
             # evento com menor delay, delay necessario?
             messages, time = self._next_messages()
             self.current_time = time
@@ -78,12 +77,13 @@ class Simulator:
                 new = self._handle_termination_rmse(group)
             
             # TODO: por delay nos events
-            self.pending.append(new)
+            self.pending += new
             #self.pendingPrint()
 
         return self.current_time
 
-    
+    # creates new messages from each node. If reached the termination limit no messages are considered.
+    # uses RMSE as limit to termination
     def _handle_termination_rmse(self, group):
         
         new = [] 
@@ -94,7 +94,7 @@ class Simulator:
             node.handle_messages(msgs)  
             gen, node_local_estimate = node.generate_messages_termination_rmse()
             square_error_sum += (node_local_estimate - self.target_value) ** 2
-            new.append(gen)
+            new += gen
             
         rmse = math.sqrt(square_error_sum / len(self.nodes))
         
@@ -105,7 +105,7 @@ class Simulator:
         else:
             return []
     
-    
+    # uses the sum of all flows as limit to termination. If the sum is equal to 0 convergion has been reached
     def _handle_termination_flowsums(self, group):
         
         new = [] 
@@ -114,9 +114,9 @@ class Simulator:
         for dst, msgs in group.items():
             node = self.nodes[dst]
             node.handle_messages(msgs)  
-            gen, node_flow_sum = generate_messages_termination_flowsums()
+            gen, node_flow_sum = node.generate_messages_termination_flowsums()
             flowsums += node_flow_sum
-            new.append(gen)
+            new += gen
             
         print('round: {} with time: {} -> flowSums: {}'.format(self.n_rounds, self.current_time, flowsums))
         
@@ -131,17 +131,20 @@ class Simulator:
     def _next_messages(self):
         time = sys.maxsize
         messages = []
-        for m in self.pending:
+        toRemove = []
+        for e in self.pending:
 
-            if m[0].time < time:
+            if e.time < time:
                 messages = []
-                time = m[0]
+                toRemove = []
+                time = e.time
             
-            if m[0].time == time:
-                messages.append(m[1])
+            if e.time == time:
+                messages.append(e.message)
+                toRemove.append(e)
         
-        for m in messages:
-            self.pending.remove(m)
+        for e in toRemove:
+            self.pending.remove(e)
 
         return messages, time
 
@@ -150,54 +153,33 @@ class Event:
         self.message = message
         self.time = time
 
-    # TODO antigo, remover se não for preciso:
-    def putTimeout(self, event):
-        self.pending.append((self.current_time + event.time, event))
-
-    def putSingular(self, event):
-        if event is not None:
-            link = self.distances[(event.getSrc(), event.getDst())]
-            if random.random() > link.loss_rate:
-                # - schedule new messages
-                self.pending.append((self.current_time + link.delay, event))
-
-    def putList(self, events):
-        for e in events:
-            # > set the delay according to 'self.distances'
-            self.putSingular(e)
-        print("c_time: ", self.current_time)
-
-
-    def pendingPrint(self):
-        print("pending.....")
-        for e in self.pending:
-            print(e[0], vars(e[1]))
-
-
 
 # - nodes: {0: Node, 1: Node, 2: Node, ...}
 def graphToNodesAndDistances(graph, fanout):
     g_nodes = {}
     g_distances = {}
+    inputs_sum = 0
     
     for n in graph:
         edges = [e for e in graph.edges(n)]
         neighbours = [n for n in graph.neighbors(n)]
-        input = random.randint(5, 10)
+        input = random.randint(1, 6)
+        print(input)
+        inputs_sum += input
         g_nodes[n] = nodes.FlowNode(n, neighbours, input)
         
         for e in edges:
             g_distances[e] = graph.get_edge_data(e[0], e[1])['weight']
     
-    return g_nodes, g_distances
+    return g_nodes, g_distances, inputs_sum
 
 
 def main():
     graph = graphGen.randomG(10, 3, 10)  # gera grafo
-    nodes = graphToNodesAndDistances(graph, 1)
+    nodes, distances, inputs_sum = graphToNodesAndDistances(graph, 1)
 
     loss_rate = 0
-    sim = Simulator(nodes, loss_rate)  # cria classe
+    sim = Simulator(nodes, distances, loss_rate)  # cria classe
     starting_node = 0
     time = sim.start(starting_node, "diz olá")  # primeira msg/inicio
     print("finished with: ", time)
