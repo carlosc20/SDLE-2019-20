@@ -5,17 +5,32 @@ class FlowNode:
         self.input = input
         self.neighbours = neighbours
         self.degree = len(neighbours)
-        self.flows = [0] * degree
-        self.estimates = [0] * degree
+        self.flows = [0] * self.degree
+        self.estimates = [0] * self.degree
+        self.local_estimate = input
 
 
     # broadcast messages to each neighbour
-    def generate_messages(self):
+    # returns sum of all flows for termination
+    def generate_messages_termination_flowsums(self):
         msgs = []
+        
+        flowSum = 0
+        
         for (n, f, e) in zip(self.neighbours, self.flows, self.estimates):
             msgs.append(FlowMessage(self.id, n, f, e))
+            flowSum += f
+            
+        return msgs, flowSum
+    
+    # returns local estimate for termination
+    def generate_messages_termination_rmse(self):
+        msgs = []
 
-        return msgs
+        for (n, f, e) in zip(self.neighbours, self.flows, self.estimates):
+            msgs.append(FlowMessage(self.id, n, f, e))
+            
+        return msgs, self.local_estimate
 
     def handle_messages(self, msgs):
 
@@ -25,16 +40,15 @@ class FlowNode:
             received.add(m.src)
             self._handle_message(m)
         
-        # mensagens perdidas -> se não chegou nada de x, por exemplo, flow/estimate x permanecem com o valor anterior, mesmo sendo 0
+        # mensagens perdidas -> se não chegou nada de x, por exemplo, flow/estimate x permanece com o valor anterior, mesmo sendo 0
         #for n in self.neighbours:
             #sender = n.id
             #if sender not in received:
                 # TODO ??
                 #self.flows[sender] = -self.flows[self.id]
 
+        ##tirei o return para o simulador poder chamar o generateMessage consoante o caso
         self._state_transition()
-        
-        return self.generate_messages()
 
 
     def _handle_message(self, msg):
@@ -43,15 +57,12 @@ class FlowNode:
         self.estimates[sender] = msg.estimate
 
     def _state_transition(self):
-        local_estimate = (input - sum(self.flows) + sum(self.estimates)) / (len(self.neighbours) + 1)
+        self.local_estimate = (input - sum(self.flows) + sum(self.estimates)) / (len(self.neighbours) + 1)
 
         for (f, e) in zip(self.flows, self.estimates):
-            f += (local_estimate + e)
-            e = local_estimate
-
-
-
-
+            f += (self.local_estimate + e)
+            e = self.local_estimate
+        
 
 class Message:
     def __init__(self, src, dst):
@@ -61,5 +72,6 @@ class Message:
 
 class FlowMessage(Message):
     def __init__(self, src, dst, flow, estimate):
-        super(src, dst)
-        #super().__init__()
+        super().__init__(src, dst)
+        self.flow = flow
+        self.estimate = estimate
