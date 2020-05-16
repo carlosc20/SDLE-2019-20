@@ -73,6 +73,9 @@ class Simulator:
                 messages = []
                 time = m[0]
 
+        # ciclo adicional para funcionar com paradigma assíncrono
+        for m in self.pending:
+            
             if m[0] == time:
                 messages.append(m[1])
         

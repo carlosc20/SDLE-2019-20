@@ -25,12 +25,12 @@ class FlowNode:
             received.add(m.src)
             self._handle_message(m)
         
-        # mensagens perdidas
-        for n in self.neighbours:
-            sender = n.id
-            if sender not in received:
+        # mensagens perdidas -> se não chegou nada de x, por exemplo, flow/estimate x permanecem com o valor anterior, mesmo sendo 0
+        #for n in self.neighbours:
+            #sender = n.id
+            #if sender not in received:
                 # TODO ??
-                self.flows[sender] = -self.flows[self.id]
+                #self.flows[sender] = -self.flows[self.id]
 
         self._state_transition()
         
