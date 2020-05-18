@@ -11,14 +11,13 @@ import math
 
 class Simulator:
 
-    def __init__(self, nodes, distances, loss_rate, input_sum = None, target_rmse = None, aggregation = 'AVERAGE'):
+    def __init__(self, graph, loss_rate, input_sum = None, target_rmse = None, aggregation = 'AVERAGE'):
         self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
-        self.nodes = nodes # dict: nr -> Node
-        self.distances = distances
+        self.graph = graph
         self.current_time = 0
         self.pending = [] # [Event]
         if aggregation == 'AVERAGE':
-            self.target_value = input_sum / len(self.nodes)
+            self.target_value = input_sum / len(self.graph)
         self.target_rmse = target_rmse
         
         # para o sincrono
@@ -29,12 +28,12 @@ class Simulator:
     def start(self):
         # primeira ronda de mensagens
         messages = []
-        for n in self.nodes.values():
+        for n in self.graph.nodes:
             
             if self.target_value == None:
-                messages += n.generate_messages_termination_flowsums()[0]
+                messages += self.graph.nodes[n]['flownode'].generate_messages_termination_flowsums()[0]
             else:
-                messages += n.generate_messages_termination_rmse()[0]
+                messages += self.graph.nodes[n]['flownode'].generate_messages_termination_rmse()[0]
                 
         self.pending += self._create_events(messages)
 
@@ -45,7 +44,7 @@ class Simulator:
     def _create_events(self, message_list):
         events = []
         for n in message_list:
-            link_delay = self.distances[(n.src, n.dst)]
+            link_delay = self.graph.get_edge_data(n.src, n.dst)['weight']
             events.append(Event(n, self.current_time + link_delay))
             
         return events
@@ -90,13 +89,13 @@ class Simulator:
         square_error_sum = 0
         
         for dst, msgs in group.items():
-            node = self.nodes[dst]
+            node = self.graph.nodes[dst]['flownode']
             node.handle_messages(msgs)  
             gen, node_local_estimate = node.generate_messages_termination_rmse()
             square_error_sum += (node_local_estimate - self.target_value) ** 2
             new += gen
             
-        rmse = math.sqrt(square_error_sum / len(self.nodes))
+        rmse = math.sqrt(square_error_sum / len(self.graph))
         
         print('round: {} with time: {} -> rmse: {}'.format(self.n_rounds, self.current_time, rmse))
         
@@ -112,7 +111,7 @@ class Simulator:
         flowsums = 0
         
         for dst, msgs in group.items():
-            node = self.nodes[dst]
+            node = self.graph.nodes[dst]['flownode']
             node.handle_messages(msgs)  
             gen, node_flow_sum = node.generate_messages_termination_flowsums()
             flowsums += node_flow_sum
@@ -148,6 +147,22 @@ class Simulator:
 
         return messages, time
 
+
+def _addConections(self, numberToAdd, numberOfConnections, w=None, input):
+    graph, new_nodes = graphGen.addNodes(self.graph, numberToAdd, numberOfConnections, w, input) 
+    self.graph = graph
+    for n in new_nodes:
+        neighbors = n.neighbors
+        for nei in neighbors:
+            node = self.graph.nodes[nei]['flownode']
+            node.addNeighbour(n)
+
+
+def _removeNodes(self, number):
+    graph, removed_nodes = graphGen.addNodes(self.graph, numberToRemove) 
+
+
+
 class Event:
     def __init__(self, message, time):
         self.message = message
@@ -168,18 +183,18 @@ def graphToNodesAndDistances(graph, fanout):
         inputs_sum += input
         g_nodes[n] = nodes.FlowNode(n, neighbours, input)
         
-        for e in edges:
-            g_distances[e] = graph.get_edge_data(e[0], e[1])['weight']
-    
-    return g_nodes, g_distances, inputs_sum
+        #for e in edges:
+         #   g_distances[e] = graph.get_edge_data(e[0], e[1])['weight']
+        nx.set_node_attributes(graph, g_nodes, 'flownode')
+    return graph, inputs_sum
 
 
 def main():
     graph = graphGen.randomG(10, 3, 10)  # gera grafo
-    nodes, distances, inputs_sum = graphToNodesAndDistances(graph, 1)
+    graph, inputs_sum = graphToNodesAndDistances(graph, 1)
 
     loss_rate = 0
-    sim = Simulator(nodes, distances, loss_rate)  # cria classe
+    sim = Simulator(graph, loss_rate)  # cria classe
     starting_node = 0
     time = sim.start(starting_node, "diz olá")  # primeira msg/inicio
     print("finished with: ", time)

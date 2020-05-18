@@ -1,5 +1,43 @@
 import networkx as nx
 import random
+import nodes
+
+
+def addNodes(graph, numberToAdd, numberOfConnections, w=None, input):
+    n_nodes = len(self.graph)
+    new_nodes = {}
+    aux_nodes = graph.nodes.copy()
+    for n in range(n_nodes + 1, n_nodes + numberToAdd + 1):
+
+        connections = []
+        for i in range(numberOfConnections + 1):
+            a = random.choice(aux_nodes)
+            connections.append(a)
+            aux_nodes.remove(a)
+
+        graph.add_node(n)
+        new_nodes[n] = nodes.FlowNode(n, connections, input)
+        for neighbour in connections:
+            if w == None:
+                graph.add_edge(n, neighbor, weight=random.randint(0, 20))
+            else:
+                graph.add_edge(n, neighbor, weight=w)
+
+    nx.set_node_attributes(graph, g_nodes, 'flownode')
+    return graph, new_nodes
+
+
+def removeNodes(graph, numToRemove):
+    aux_nodes = graph.nodes.copy()
+    removed = []
+    for n in range(numToRemove + 1):
+        a = random.choice(aux_nodes)
+        graph.remove_node(n)
+        aux_nodes.remove(n)
+        removed.append(a)
+    
+    return graph, removed
+
 
 # Cuidado com o max_degree, especialmente quando é baixo. Devido à aleatoriedade podemos nunca chegar a um grafo conectado.  
 # Exemplo: max_degree = 2 -> Se não se formar apenas um grafo linear em que alguns nodos só tem um vértice entramos em ciclo infinito,
