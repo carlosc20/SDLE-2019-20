@@ -36,9 +36,9 @@ class Simulator:
         for n in self.graph.nodes:
             
             if self.target_value == None:
-                messages += self.graph.nodes[n]['flownode'].generate_messages()[0]
+                messages += self.graph.nodes[n]['flownode'].generate_messages()
             else:
-                messages += self.graph.nodes[n]['flownode'].generate_messages()[0]
+                messages += self.graph.nodes[n]['flownode'].generate_messages()
                 
         self.pending += self._create_events(messages)
 
@@ -76,16 +76,16 @@ class Simulator:
                 g.append(m)
                 
             if self.termination_func is not None:
-                self.termination_func(group, nodes) # usar partial (do functools) para passar funcao com args adicionais ex: termination_func(target_value = 1, target_rmse = 2)
+                self.termination_func(group, self.graph) # usar partial (do functools) para passar funcao com args adicionais ex: termination_func(target_value = 1, target_rmse = 2)
 
             # apagar se codigo a cima funcionar
             if self.target_value is None:
-                new = GlobalTerminateFlowSumNode.handle_termination(group, self.nodes)
+                new = GlobalTerminateFlowSumNode.handle_termination(group, self.graph)
                 if new:
                     new = self._create_events(new)
             else:
                 #print('round: {} with time: {} -> rmse: {}'.format(self.n_rounds, self.current_time, rmse))
-                new = GlobalTerminateRMSENode.handle_termination(group, self.nodes, self.target_value, self.target_rmse)
+                new = GlobalTerminateRMSENode.handle_termination(group, self.graph, self.target_value, self.target_rmse)
                 if new:
                     new = self._create_events(new)
                 
@@ -97,10 +97,6 @@ class Simulator:
         return self.current_time
 
 
-    
-
-        
-    
     # vai buscar e remove do pending as mensagens com menor delay
     # devolve lista de mensagens e delay
     def _next_messages(self):
@@ -136,8 +132,12 @@ def _addConections(self, numberToAdd, numberOfConnections, w=None, input):
 
 def _removeNodes(self, number):
     graph, removed_nodes = graphGen.addNodes(self.graph, numberToRemove) 
-
-
+    self.graph = graph
+    for n in removed_nodes:
+        neighbors = n.neighbors
+        for nei in neighbors:
+            node = self.graph.nodes[nei]['flownode']
+            node.removeNeighbour(n)
 
 class Event:
     def __init__(self, message, time):

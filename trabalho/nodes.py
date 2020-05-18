@@ -71,13 +71,13 @@ class GlobalTerminateFlowSumNode(FlowNode):
 
     # uses the sum of all flows as limit to termination. If the sum is equal to 0 convergion has been reached
     @staticmethod
-    def handle_termination(self, group, nodes):
+    def handle_termination(self, group, graph):
         
         new = [] 
         flowsums = 0
         
         for dst, msgs in group.items():
-            node = nodes[dst]
+            node = graph.nodes[n]['flownode']
             node.handle_messages(msgs)  
             gen, node_flow_sum = node.generate_messages_termination_flowsums()
             flowsums += node_flow_sum
@@ -113,13 +113,13 @@ class GlobalTerminateRMSENode(FlowNode):
         square_error_sum = 0
         
         for dst, msgs in group.items():
-            node = nodes[dst]
+            node = graph.nodes[n]['flownode']
             node.handle_messages(msgs)  
             gen, node_local_estimate = node.generate_messages_termination_rmse()
             square_error_sum += (node_local_estimate - target_value) ** 2
             new += gen
             
-        rmse = math.sqrt(square_error_sum / len(nodes))
+        rmse = math.sqrt(square_error_sum / len(graph))
         
         if (rmse > target_rmse):
             return new

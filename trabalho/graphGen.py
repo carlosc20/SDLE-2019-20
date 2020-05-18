@@ -32,9 +32,10 @@ def removeNodes(graph, numToRemove):
     removed = []
     for n in range(numToRemove + 1):
         a = random.choice(aux_nodes)
+        removed.append(graph.nodes[a]['flownode'])
         graph.remove_node(n)
         aux_nodes.remove(n)
-        removed.append(a)
+        
     
     return graph, removed
 
