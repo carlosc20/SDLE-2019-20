@@ -2,21 +2,26 @@ import sys
 import networkx as nx
 import matplotlib.pyplot as plt
 import graphGen
+import message
 import nodes
+from nodes import *
 import random
 import math
 
-# TODO: Fazer mudanças de ligações no grafo em runtime
 
+# TODO: Fazer mudanças de ligações no grafo em runtime
+# mudanças no grafo, heurísticas para o "fanout" e o método de terminação local e não modo "deus" do simulador
 
 class Simulator:
 
-    def __init__(self, nodes, distances, loss_rate, input_sum = None, target_rmse = None, aggregation = 'AVERAGE'):
+    def __init__(self, nodes, distances, loss_rate, input_sum = 0, target_rmse = None, termination_func = None, aggregation = 'AVERAGE'):
+        self.termination_func = termination_func
         self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
         self.nodes = nodes # dict: nr -> Node
         self.distances = distances
         self.current_time = 0
         self.pending = [] # [Event]
+
         if aggregation == 'AVERAGE':
             self.target_value = input_sum / len(self.nodes)
         self.target_rmse = target_rmse
@@ -30,12 +35,8 @@ class Simulator:
         # primeira ronda de mensagens
         messages = []
         for n in self.nodes.values():
-            
-            if self.target_value == None:
-                messages += n.generate_messages_termination_flowsums()[0]
-            else:
-                messages += n.generate_messages_termination_rmse()[0]
-                
+            messages += n.generate_messages()
+
         self.pending += self._create_events(messages)
 
         # run the simulation loop
@@ -71,10 +72,20 @@ class Simulator:
 
                 g.append(m)
                 
-            if self.target_value == None:
-                new = self._handle_termination_flowsums(group)
+            if self.termination_func is not None:
+                self.termination_func(group, nodes) # usar partial (do functools) para passar funcao com args adicionais ex: termination_func(target_value = 1, target_rmse = 2)
+
+            # apagar se codigo a cima funcionar
+            if self.target_value is None:
+                new = GlobalTerminateFlowSumNode.handle_termination(group, self.nodes)
+                if new:
+                    new = self._create_events(new)
             else:
-                new = self._handle_termination_rmse(group)
+                #print('round: {} with time: {} -> rmse: {}'.format(self.n_rounds, self.current_time, rmse))
+                new = GlobalTerminateRMSENode.handle_termination(group, self.nodes, self.target_value, self.target_rmse)
+                if new:
+                    new = self._create_events(new)
+                
             
             # TODO: por delay nos events
             self.pending += new
@@ -82,48 +93,9 @@ class Simulator:
 
         return self.current_time
 
-    # creates new messages from each node. If reached the termination limit no messages are considered.
-    # uses RMSE as limit to termination
-    def _handle_termination_rmse(self, group):
-        
-        new = [] 
-        square_error_sum = 0
-        
-        for dst, msgs in group.items():
-            node = self.nodes[dst]
-            node.handle_messages(msgs)  
-            gen, node_local_estimate = node.generate_messages_termination_rmse()
-            square_error_sum += (node_local_estimate - self.target_value) ** 2
-            new += gen
-            
-        rmse = math.sqrt(square_error_sum / len(self.nodes))
-        
-        print('round: {} with time: {} -> rmse: {}'.format(self.n_rounds, self.current_time, rmse))
-        
-        if (rmse > self.target_rmse):
-            return self._create_events(new)
-        else:
-            return []
+
     
-    # uses the sum of all flows as limit to termination. If the sum is equal to 0 convergion has been reached
-    def _handle_termination_flowsums(self, group):
-        
-        new = [] 
-        flowsums = 0
-        
-        for dst, msgs in group.items():
-            node = self.nodes[dst]
-            node.handle_messages(msgs)  
-            gen, node_flow_sum = node.generate_messages_termination_flowsums()
-            flowsums += node_flow_sum
-            new += gen
-            
-        print('round: {} with time: {} -> flowSums: {}'.format(self.n_rounds, self.current_time, flowsums))
-        
-        if (flowsums > 0):
-            return self._create_events(new)
-        else:
-            return []
+
         
     
     # vai buscar e remove do pending as mensagens com menor delay
@@ -135,8 +107,8 @@ class Simulator:
         for e in self.pending:
 
             if e.time < time:
-                messages = []
-                toRemove = []
+                messages.clear()
+                toRemove.clear()
                 time = e.time
             
             if e.time == time:
@@ -175,13 +147,16 @@ def graphToNodesAndDistances(graph, fanout):
 
 
 def main():
+    print("teste")
     graph = graphGen.randomG(10, 3, 10)  # gera grafo
     nodes, distances, inputs_sum = graphToNodesAndDistances(graph, 1)
 
     loss_rate = 0
+    # passar termination_func
+    # https://stackoverflow.com/questions/803616/passing-functions-with-arguments-to-another-function-in-python
     sim = Simulator(nodes, distances, loss_rate)  # cria classe
     starting_node = 0
-    time = sim.start(starting_node, "diz olá")  # primeira msg/inicio
+    time = sim.start()  # primeira msg/inicio
     print("finished with: ", time)
     nx.draw(graph, with_labels=True)
 
