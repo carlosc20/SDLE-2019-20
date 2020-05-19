@@ -12,6 +12,19 @@ class FlowNode:
         self.flows = dict.fromkeys(neighbours, 0)
         self.estimates = dict.fromkeys(neighbours, 0)
 
+    def addNeighbour(self, node):
+        self.neighbours.append(node)
+        self.flows[node] = 0
+        self.estimates[node] = 0
+        self.degree += 1
+
+    def removeNeighbour(self, node):
+        self.neighbours.remove(node)
+        del self.flows[node]
+        del self.estimates[node]
+        self.degree -= 1
+        print("removed: ", self.flows, " " , self.estimates)
+
     def generate_messages(self):
         msgs = []
         for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
@@ -29,7 +42,6 @@ class FlowNode:
 
 
     def _handle_message(self, msg):
-        print(self.id, " received f: ", msg.flow,  " e: ", msg.estimate) 
 
         sender = msg.src
         self.flows[sender] = -msg.flow
@@ -70,8 +82,8 @@ class GlobalTerminateFlowSumNode(FlowNode):
 
     # uses the sum of all flows as limit to termination. If the sum is equal to 0 convergion has been reached
     @staticmethod
-    def handle_termination(group, graph, input_sum):
-        
+    def handle_termination(group, graph, input_sum, confidence_value):
+
         new = [] 
         flowsums = 0
         
@@ -81,11 +93,13 @@ class GlobalTerminateFlowSumNode(FlowNode):
             gen = node.generate_messages_termination_flowsums()
             new += gen
 
-        for n in range(len(graph)):
+        for n in graph.nodes:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
         
         print('flowsums: ', flowsums)
-        if (abs(flowsums) > input_sum % len(graph) + 0.0000001):
+        r_up = input_sum % len(graph) + confidence_value
+        r_down = input_sum % len(graph) - confidence_value
+        if (flowsums > r_up or flowsums < r_down):
             return new
         else:
             return []

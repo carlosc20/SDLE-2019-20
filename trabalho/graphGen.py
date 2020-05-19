@@ -1,42 +1,65 @@
 import networkx as nx
 import random
 import nodes
+import simulator
 
-def addNodes(graph, numberToAdd, numberOfConnections, input, w=None):
-    n_nodes = len(self.graph)
+def addNodes(graph, numberToAdd, numberOfConnections, input, node_type, w=None, **kwargs):
+    n_nodes = len(graph)
     new_nodes = {}
-    aux_nodes = graph.nodes.copy()
-    for n in range(n_nodes + 1, n_nodes + numberToAdd + 1):
+    #for n in graph.nodes:
+     #   new_nodes[n] = graph.nodes[n]['flownode']
 
+    for n in range(n_nodes, n_nodes + numberToAdd):
+        
         connections = []
-        for i in range(numberOfConnections + 1):
+        aux_nodes = list(graph.nodes)
+
+        if n > n_nodes:
+            aux_nodes.remove(n-1)
+
+        for i in range(numberOfConnections):
             a = random.choice(aux_nodes)
             connections.append(a)
             aux_nodes.remove(a)
 
         graph.add_node(n)
-        new_nodes[n] = nodes.FlowNode(n, connections, input)
-        for neighbour in connections:
-            if w == None:
-                graph.add_edge(n, neighbor, weight=random.randint(5, 200))
-            else:
-                graph.add_edge(n, neighbor, weight=w)
+        new_nodes[n] = simulator.buildNode(n, node_type, input, connections, kwargs)
 
-    nx.set_node_attributes(graph, g_nodes, 'flownode')
-    return graph, new_nodes
+        for neighbour in connections:
+            print(n, neighbour)
+            if w == None:
+                graph.add_edge(n, neighbour, weight=random.randint(5, 200))
+            else:
+                graph.add_edge(n, neighbour, weight=w)
+            graph.nodes[neighbour]['flownode'].addNeighbour(n)
+        
+    nx.set_node_attributes(graph, new_nodes, 'flownode')
 
 
 def removeNodes(graph, numToRemove):
-    aux_nodes = graph.nodes.copy()
+    aux_nodes = list(graph.nodes)
     removed = []
-    for n in range(numToRemove + 1):
-        a = random.choice(aux_nodes)
-        removed.append(graph.nodes[a]['flownode'])
-        graph.remove_node(n)
-        aux_nodes.remove(n)
-        
+
+    max_iter = 25
+   
+    for n in range(numToRemove):
+        i = 0
+        while(i <= 25):
+            a = random.choice(aux_nodes)
+
+            node = graph.nodes[a]['flownode']
+            #só retira folhas
+            if(len(node.neighbours) == 1):
+                graph.remove_node(a)
+                aux_nodes.remove(a)
+                removed.append(node)
+                break
+            i += 1
+        if i <= max_iter:
+            for nei in node.neighbours:
+                graph.nodes[nei]['flownode'].removeNeighbour(a)
     
-    return graph, removed
+    return removed
 
 
 # Cuidado com o max_degree, especialmente quando é baixo. Devido à aleatoriedade podemos nunca chegar a um grafo conectado.  

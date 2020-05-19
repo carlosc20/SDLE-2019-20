@@ -14,16 +14,17 @@ import math
 
 class Simulator:
 
-    def __init__(self, graph, loss_rate, input_sum, target_rmse = None, termination_func = None, aggregation = 'AVERAGE'):
+    def __init__(self, graph, loss_rate, input_sum, confidence_value, t_type = 'rmse', termination_func = None, aggregation = 'AVERAGE'):
         self.termination_func = termination_func
         self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
         self.graph = graph
         self.current_time = 0
         self.pending = [] # [Event]
         self.input_sum = input_sum
+        self.t_type = t_type
         if aggregation == 'AVERAGE':
             self.target_value = input_sum / len(self.graph)
-        self.target_rmse = target_rmse
+        self.confidence_value = confidence_value
         
         # para o sincrono
         self.n_rounds = 0
@@ -79,21 +80,61 @@ class Simulator:
                 self.termination_func(group, self.graph) # usar partial (do functools) para passar funcao com args adicionais ex: termination_func(target_value = 1, target_rmse = 2)
 
             # apagar se codigo a cima funcionar
-            if self.target_rmse is None:
-                new = GlobalTerminateFlowSumNode.handle_termination(group, self.graph, self.input_sum)
+            if self.t_type is 'flowsums':
+                new = GlobalTerminateFlowSumNode.handle_termination(group, self.graph, self.input_sum, self.confidence_value)
                 if new:
                     new = self._create_events(new)
             else:           
-                new = GlobalTerminateRMSENode.handle_termination(group, self.graph, self.target_value, self.target_rmse)
+                new = GlobalTerminateRMSENode.handle_termination(group, self.graph, self.target_value, self.confidence_value)
                 if new:
                     new = self._create_events(new)
                 
             
             # TODO: por delay nos events
             self.pending += new
+
+            if self.n_rounds == 5:
+                #self._addMembers(2, 2, 1, 10)
+                self._removeMembers(2)
+            
             #self.pendingPrint()
 
         return self.current_time
+
+
+    #input igual para todos os nodos adicionados
+    def _addMembers(self, numberToAdd, numberOfConnections, input, w=None):
+        graphGen.addNodes(self.graph, numberToAdd, numberOfConnections, input, self.t_type, w)
+        self.input_sum += input * numberToAdd
+
+        #assume average
+        self.target_value = self.input_sum / len(self.graph)
+        nx.draw(self.graph, with_labels=True)
+        plt.show()
+
+
+    #só usar com grafos maiores. perigosa
+    def _removeMembers(self, numberToRemove):
+        removed = graphGen.removeNodes(self.graph, numberToRemove) 
+        
+        for r in removed:
+            self.input_sum -= r.input 
+
+        self.target_value = self.input_sum / len(self.graph)
+
+        #remove messages to removed members
+        removed_ids = [n.id for n in removed]
+        to_remove = []
+        for e in self.pending:
+            if e.message.dst in removed_ids or e.message.src in removed_ids:
+                to_remove.append(e)
+
+        for e in to_remove:
+            self.pending.remove(e)
+
+        nx.draw(self.graph, with_labels=True)
+        plt.show()
+
 
 
     # vai buscar e remove do pending as mensagens com menor delay
@@ -118,26 +159,6 @@ class Simulator:
 
         return messages, time
 
-
-def _addConections(self, numberToAdd, numberOfConnections, input, w=None):
-    graph, new_nodes = graphGen.addNodes(self.graph, numberToAdd, numberOfConnections, input, w) 
-    self.graph = graph
-    for n in new_nodes:
-        neighbors = n.neighbors
-        for nei in neighbors:
-            node = self.graph.nodes[nei]['flownode']
-            node.addNeighbour(n)
-
-
-def _removeNodes(self, number):
-    graph, removed_nodes = graphGen.addNodes(self.graph, numberToRemove) 
-    self.graph = graph
-    for n in removed_nodes:
-        neighbors = n.neighbors
-        for nei in neighbors:
-            node = self.graph.nodes[nei]['flownode']
-            node.removeNeighbour(n)
-
 class Event:
     def __init__(self, message, time):
         self.message = message
@@ -145,7 +166,7 @@ class Event:
 
 
 # - nodes: {0: Node, 1: Node, 2: Node, ...}
-def graphToNodesAndDistances(graph, fanout, inputs, node_type='flowSumNode', **kwargs):
+def graphToNodesAndDistances(graph, fanout, inputs, node_type='flowSumNode', max_rounds = None):
     g_nodes = {}
     g_distances = {}
     inputs_sum = 0
@@ -154,16 +175,20 @@ def graphToNodesAndDistances(graph, fanout, inputs, node_type='flowSumNode', **k
         edges = [e for e in graph.edges(n)]
         neighbours = [n for n in graph.neighbors(n)]
         inputs_sum += inputs[n]
-        if node_type == 'flowSumNode':
-            g_nodes[n] = nodes.GlobalTerminateFlowSumNode(n, neighbours, inputs[n])
-        elif node_type == 'rmseNode':
-            g_nodes[n] = nodes.GlobalTerminateRMSENode(n, neighbours, inputs[n])
-        else:
-            g_nodes[n] = nodes.SelfTerminateIterNode(n, neighbours, inputs[n], kwargs.get('max_rounds'))
+        g_nodes[n] = buildNode(n, node_type, inputs[n], neighbours, max_rounds)
 
         nx.set_node_attributes(graph, g_nodes, 'flownode')
     return graph, inputs_sum
 
+
+def buildNode(id, node_type, input, neighbours, max_rounds):
+    if node_type == 'flowsums':
+        node = nodes.GlobalTerminateFlowSumNode(id, neighbours, input)
+    elif node_type == 'rmse':
+        node = nodes.GlobalTerminateRMSENode(id, neighbours, input)
+    else:
+        node = nodes.SelfTerminateIterNode(id, neighbours, input, max_rounds)
+    return node
 
 def main():
     print("teste")
