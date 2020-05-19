@@ -2,8 +2,7 @@ import networkx as nx
 import random
 import nodes
 
-
-def addNodes(graph, numberToAdd, numberOfConnections, w=None, input):
+def addNodes(graph, numberToAdd, numberOfConnections, input, w=None):
     n_nodes = len(self.graph)
     new_nodes = {}
     aux_nodes = graph.nodes.copy()
@@ -19,7 +18,7 @@ def addNodes(graph, numberToAdd, numberOfConnections, w=None, input):
         new_nodes[n] = nodes.FlowNode(n, connections, input)
         for neighbour in connections:
             if w == None:
-                graph.add_edge(n, neighbor, weight=random.randint(0, 20))
+                graph.add_edge(n, neighbor, weight=random.randint(5, 200))
             else:
                 graph.add_edge(n, neighbor, weight=w)
 
@@ -58,7 +57,10 @@ def randomG(size=10, max_degree=3, w=None):
                 b = random.choice(list(nodes_degree.keys()))
                 if not G.has_edge(a, b) and a != b and nodes_degree[b] < max_degree:
                     if w == None:
-                        G.add_edge(a, b, weight=random.randint(0, 20))
+                        r = random.randint(5, 150)
+                        G.add_edge(a, b, weight=r)
+                        print(a, " -> ", b, " weight: ", r)
+
                     else:
                         G.add_edge(a, b, weight=w)
                     nodes_degree[a] += 1

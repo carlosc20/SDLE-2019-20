@@ -14,13 +14,13 @@ import math
 
 class Simulator:
 
-    def __init__(self, graph, loss_rate, input_sum = 0, target_rmse = None, termination_func = None, aggregation = 'AVERAGE'):
+    def __init__(self, graph, loss_rate, input_sum, target_rmse = None, termination_func = None, aggregation = 'AVERAGE'):
         self.termination_func = termination_func
         self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
         self.graph = graph
         self.current_time = 0
         self.pending = [] # [Event]
-
+        self.input_sum = input_sum
         if aggregation == 'AVERAGE':
             self.target_value = input_sum / len(self.graph)
         self.target_rmse = target_rmse
@@ -79,12 +79,11 @@ class Simulator:
                 self.termination_func(group, self.graph) # usar partial (do functools) para passar funcao com args adicionais ex: termination_func(target_value = 1, target_rmse = 2)
 
             # apagar se codigo a cima funcionar
-            if self.target_value is None:
-                new = GlobalTerminateFlowSumNode.handle_termination(group, self.graph)
+            if self.target_rmse is None:
+                new = GlobalTerminateFlowSumNode.handle_termination(group, self.graph, self.input_sum)
                 if new:
                     new = self._create_events(new)
-            else:
-                #print('round: {} with time: {} -> rmse: {}'.format(self.n_rounds, self.current_time, rmse))
+            else:           
                 new = GlobalTerminateRMSENode.handle_termination(group, self.graph, self.target_value, self.target_rmse)
                 if new:
                     new = self._create_events(new)
@@ -120,8 +119,8 @@ class Simulator:
         return messages, time
 
 
-def _addConections(self, numberToAdd, numberOfConnections, w=None, input):
-    graph, new_nodes = graphGen.addNodes(self.graph, numberToAdd, numberOfConnections, w, input) 
+def _addConections(self, numberToAdd, numberOfConnections, input, w=None):
+    graph, new_nodes = graphGen.addNodes(self.graph, numberToAdd, numberOfConnections, input, w) 
     self.graph = graph
     for n in new_nodes:
         neighbors = n.neighbors
@@ -146,7 +145,7 @@ class Event:
 
 
 # - nodes: {0: Node, 1: Node, 2: Node, ...}
-def graphToNodesAndDistances(graph, fanout):
+def graphToNodesAndDistances(graph, fanout, inputs, node_type='flowSumNode', **kwargs):
     g_nodes = {}
     g_distances = {}
     inputs_sum = 0
@@ -154,13 +153,14 @@ def graphToNodesAndDistances(graph, fanout):
     for n in graph:
         edges = [e for e in graph.edges(n)]
         neighbours = [n for n in graph.neighbors(n)]
-        input = random.randint(1, 6)
-        print(input)
-        inputs_sum += input
-        g_nodes[n] = nodes.FlowNode(n, neighbours, input)
-        
-        #for e in edges:
-         #   g_distances[e] = graph.get_edge_data(e[0], e[1])['weight']
+        inputs_sum += inputs[n]
+        if node_type == 'flowSumNode':
+            g_nodes[n] = nodes.GlobalTerminateFlowSumNode(n, neighbours, inputs[n])
+        elif node_type == 'rmseNode':
+            g_nodes[n] = nodes.GlobalTerminateRMSENode(n, neighbours, inputs[n])
+        else:
+            g_nodes[n] = nodes.SelfTerminateIterNode(n, neighbours, inputs[n], kwargs.get('max_rounds'))
+
         nx.set_node_attributes(graph, g_nodes, 'flownode')
     return graph, inputs_sum
 

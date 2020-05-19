@@ -29,6 +29,8 @@ class FlowNode:
 
 
     def _handle_message(self, msg):
+        print(self.id, " received f: ", msg.flow,  " e: ", msg.estimate) 
+
         sender = msg.src
         self.flows[sender] = -msg.flow
         self.estimates[sender] = msg.estimate
@@ -60,34 +62,33 @@ class GlobalTerminateFlowSumNode(FlowNode):
     def generate_messages_termination_flowsums(self):
         msgs = []
         
-        flowSum = 0
-        
         for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
             msgs.append(FlowMessage(self.id, n, f, e))
-            flowSum += f
-            
-        return msgs, flowSum
+           
+        return msgs
 
 
     # uses the sum of all flows as limit to termination. If the sum is equal to 0 convergion has been reached
     @staticmethod
-    def handle_termination(self, group, graph):
+    def handle_termination(group, graph, input_sum):
         
         new = [] 
         flowsums = 0
         
         for dst, msgs in group.items():
-            node = graph.nodes[n]['flownode']
+            node = graph.nodes[dst]['flownode']
             node.handle_messages(msgs)  
-            gen, node_flow_sum = node.generate_messages_termination_flowsums()
-            flowsums += node_flow_sum
+            gen = node.generate_messages_termination_flowsums()
             new += gen
 
-        if (flowsums > 0):
+        for n in range(len(graph)):
+            flowsums += sum(graph.nodes[n]['flownode'].flows.values())
+        
+        print('flowsums: ', flowsums)
+        if (abs(flowsums) > input_sum % len(graph) + 0.0000001):
             return new
         else:
             return []
-
 
 
 
@@ -107,20 +108,21 @@ class GlobalTerminateRMSENode(FlowNode):
     # creates new messages from each node. If reached the termination limit no messages are considered.
     # uses RMSE as limit to termination
     @staticmethod
-    def handle_termination(group, nodes, target_value, target_rmse):
+    def handle_termination(group, graph, target_value, target_rmse):
         
         new = [] 
         square_error_sum = 0
         
         for dst, msgs in group.items():
-            node = graph.nodes[n]['flownode']
+            node = graph.nodes[dst]['flownode']
             node.handle_messages(msgs)  
             gen, node_local_estimate = node.generate_messages_termination_rmse()
             square_error_sum += (node_local_estimate - target_value) ** 2
             new += gen
             
         rmse = math.sqrt(square_error_sum / len(graph))
-        
+        print('rmse: ', rmse)
+
         if (rmse > target_rmse):
             return new
         else:
