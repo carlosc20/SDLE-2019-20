@@ -32,13 +32,14 @@ class FlowNode:
 
         return msgs
 
-
     def handle_messages(self, msgs):
 
         for m in msgs:
             self._handle_message(m)
         
         self._state_transition()
+
+        return self.generate_messages()
 
 
     def _handle_message(self, msg):
@@ -60,90 +61,23 @@ class FlowNode:
         
         print("node: ", self.id)
         print("Flows: ",self.flows)
-        print("Estimates: ", self.estimates)
+        print("Estimates: ", self.estimates, "\n")
 
 
-
-
-
-class GlobalTerminateFlowSumNode(FlowNode):
-    def __init__(self, id, neighbours, input):
+class TimeoutFlowNode(FlowNode):
+    def __init__(self, id, neighbours, input, timeout_time):
         super().__init__(id, neighbours, input)
+        self.timeout_time = timeout_time
 
+    def handle_messages(self, msgs):
+        for m in msgs:
+            super()._handle_message(m)
+        return []  
 
-    def generate_messages_termination_flowsums(self):
-        msgs = []
-        
-        for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
-            msgs.append(FlowMessage(self.id, n, f, e))
-           
-        return msgs
-
-
-    # uses the sum of all flows as limit to termination. If the sum is equal to 0 convergion has been reached
-    @staticmethod
-    def handle_termination(group, graph, input_sum, confidence_value):
-
-        new = [] 
-        flowsums = 0
-        
-        for dst, msgs in group.items():
-            node = graph.nodes[dst]['flownode']
-            node.handle_messages(msgs)  
-            gen = node.generate_messages_termination_flowsums()
-            new += gen
-
-        for n in graph.nodes:
-            flowsums += sum(graph.nodes[n]['flownode'].flows.values())
-        
-        print('flowsums: ', flowsums)
-        r_up = input_sum % len(graph) + confidence_value
-        r_down = input_sum % len(graph) - confidence_value
-        if (flowsums > r_up or flowsums < r_down):
-            return new
-        else:
-            return []
-
-
-
-class GlobalTerminateRMSENode(FlowNode):
-    def __init__(self, id, neighbours, input):
-        super().__init__(id, neighbours, input)
-
-    # returns local estimate for termination
-    def generate_messages_termination_rmse(self):
-        msgs = []
-
-        for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
-            msgs.append(FlowMessage(self.id, n, f, e))
-            
-        return msgs, self.local_estimate
-
-
-    # creates new messages from each node. If reached the termination limit no messages are considered.
-    # uses RMSE as limit to termination
-    @staticmethod
-    def handle_termination(group, graph, target_value, target_rmse):
-        
-        new = [] 
-        square_error_sum = 0
-        
-        for dst, msgs in group.items():
-            node = graph.nodes[dst]['flownode']
-            node.handle_messages(msgs)  
-            gen, node_local_estimate = node.generate_messages_termination_rmse()
-            square_error_sum += (node_local_estimate - target_value) ** 2
-            new += gen
-            
-        rmse = math.sqrt(square_error_sum / len(graph))
-        print('rmse: ', rmse)
-
-        if (rmse > target_rmse):
-            return new
-        else:
-            return []
-
-
+    # returns (timeout, [msg])
+    def handle_timeout(self):
+        super()._state_transition()
+        return Timeout(self.id, self.timeout_time), super().generate_messages()
 
 
 class SelfTerminateIterNode(FlowNode):
@@ -179,5 +113,6 @@ class SelfTerminateDifNode(FlowNode):
             dif = self.local_estimate / prev_estimate
             if(dif <= min_dif):
                 self.working = False
+
 
 
