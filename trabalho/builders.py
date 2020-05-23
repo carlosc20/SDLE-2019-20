@@ -21,8 +21,11 @@ class SimulatorBuilder:
         self.simulator.loss_rate = loss_rate
 
 
-    def with_agregation_type_and_confidence(self, aggregation_type, confidence_value):
+    def with_agregation_type(self, aggregation_type):
         self.simulator.aggregation_type = aggregation_type
+
+
+    def with_confidence_value(self, confidence_value):
         self.simulator.confidence_value = confidence_value
 
 
@@ -93,7 +96,7 @@ class SimulatorBuilder:
 
 
 def main():
-    G = graphGen.randomG(10,5,10)
+    G = graphGen.randomG(5,3)
     inputs = [1] * len(G)
     nx.draw(G, with_labels=True)
     plt.show()
@@ -101,9 +104,10 @@ def main():
     sim_builder = builders.SimulatorBuilder()
     #as an example, default is already 0
     sim_builder.with_loss_rate(0.5)
-    sim_builder.with_agregation_type_and_confidence('average', 0.01)
+    sim_builder.with_agregation_type('average')
     sim_builder.with_flowsums_termination()
-    sim_builder.with_scheduled_add_members_event(1,1,1,5,False,10)
+    sim.builder.with_timeout_protocol(40)
+    sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)
     
     fanout = 1
     sim = sim_builder.build(fanout, G, inputs)

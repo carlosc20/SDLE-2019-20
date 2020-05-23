@@ -12,8 +12,6 @@ import events
 class Simulator:
 
     def __init__(self):
-        #TODO não sei o que é isto
-        self.termination_func = None
         self.loss_rate = 0 # 0 a 1 corresponde á probabilidade de perda de uma mensagem
         self.graph = None
         self.current_time = 0
@@ -43,7 +41,7 @@ class Simulator:
             node = self.graph.nodes[n]['flownode']
             messages += node.generate_messages()
             if self.base_node_type == "timeout":
-                timeouts += message.Timeout(n, timeout_time)
+                timeouts.append(message.Timeout(n, self.timeout_value))
                 
         self.pending += self._create_events(messages, timeouts)
 
@@ -107,11 +105,11 @@ class Simulator:
         newMsgs = []
         for dst in timeouts.keys():
             node = graph.nodes[dst]['flownode']
-            t, msgs = node._handle_timeouts()
-            newTimeouts += t
+            t, msgs = node.handle_timeout()
+            newTimeouts.append(t)
             newMsgs += msgs
 
-        return self._create_events(newTimeouts, newMsgs)
+        return self._create_events(newMsgs, newTimeouts)
 
 
     # uses the sum of all flows as limit to termination. If the sum is equal to remainder convergion has been reached
@@ -124,6 +122,7 @@ class Simulator:
         r_up = input_sum % len(graph) + confidence_value
         r_down = input_sum % len(graph) - confidence_value
         return flowsums < r_up and flowsums > r_down
+
 
     # uses RMSE as limit to termination
     def check_terminate_rmse(self, graph, target_value, target_rmse):
@@ -166,13 +165,9 @@ class Simulator:
 
                 g.append(m)
                             
-            if self.termination_func is not None:
-                self.termination_func(group, self.graph) # usar partial (do functools) para passar funcao com args adicionais ex: termination_func(target_value = 1, target_rmse = 2)
-
-
             new = self._handle_group_msg(group, self.graph)
 
-            if self.base_node_type == 'timout':
+            if self.base_node_type == 'timeout':
                 new += self._handle_timeouts(timeouts, self.graph)
 
             terminated = False

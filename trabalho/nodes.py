@@ -65,19 +65,21 @@ class FlowNode:
 
 
 class TimeoutFlowNode(FlowNode):
-    def __init__(self, id, neighbours, input, timeout_time):
+    def __init__(self, id, neighbours, input, timeout_value):
         super().__init__(id, neighbours, input)
-        self.timeout_time = timeout_time
+        self.timeout_value = timeout_value
 
     def handle_messages(self, msgs):
+        print("Storing Messages")
         for m in msgs:
             super()._handle_message(m)
         return []  
 
     # returns (timeout, [msg])
     def handle_timeout(self):
+        print("Timeout arrived")
         super()._state_transition()
-        return Timeout(self.id, self.timeout_time), super().generate_messages()
+        return Timeout(self.id, self.timeout_value), super().generate_messages()
 
 
 class SelfTerminateIterNode(FlowNode):
