@@ -119,6 +119,7 @@ class GlobalTerminateRMSENode(FlowNode):
             
         return msgs, self.local_estimate
 
+
     # creates new messages from each node. If reached the termination limit no messages are considered.
     # uses RMSE as limit to termination
     @staticmethod

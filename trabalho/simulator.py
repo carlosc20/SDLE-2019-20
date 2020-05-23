@@ -14,8 +14,8 @@ import math
 
 class Simulator:
 
-    def __init__(self, graph, loss_rate, input_sum, confidence_value, t_type = 'rmse', termination_func = None, aggregation = 'AVERAGE'):
-        self.termination_func = termination_func
+    def __init__(self, graph, loss_rate, input_sum, confidence_value, t_type = 'rmse', aggregation = 'AVERAGE'):
+
         self.loss_rate = loss_rate # 0 a 1 corresponde á probabilidade de perda de uma mensagem
         self.graph = graph
         self.current_time = 0
@@ -76,10 +76,6 @@ class Simulator:
 
                 g.append(m)
                 
-            if self.termination_func is not None:
-                self.termination_func(group, self.graph) # usar partial (do functools) para passar funcao com args adicionais ex: termination_func(target_value = 1, target_rmse = 2)
-
-            # apagar se codigo a cima funcionar
             if self.t_type is 'flowsums':
                 new = GlobalTerminateFlowSumNode.handle_termination(group, self.graph, self.input_sum, self.confidence_value)
                 if new:
@@ -191,16 +187,21 @@ def buildNode(id, node_type, input, neighbours, max_rounds):
     return node
 
 def main():
-    print("teste")
-    graph = graphGen.randomG(10, 3, 10)  # gera grafo
-    graph, inputs_sum = graphToNodesAndDistances(graph, 1)
-
-    loss_rate = 0
-    sim = Simulator(graph, loss_rate)  # cria classe
-    starting_node = 0
-    time = sim.start()  # primeira msg/inicio
-    print("finished with: ", time)
-    nx.draw(graph, with_labels=True)
+    s_type = 'flowsums'
+    #node_type = 'rmseNode'
+    #node_type = 'selfNotice'
+    G = graphGen.randomG(10,5,10)
+    nx.draw(G, with_labels=True)
+    plt.show()
+        
+    inputs = [1,1,1,1,1,1,1,1,1,1]
+    graph, input_sum = graphToNodesAndDistances(G, 1, inputs, s_type)
+    #graph, input_sum = simulator.graphToNodesAndDistances(G, 1, inputs, node_type, max_rounds = 5)
+    
+    loss_rate = 0.1
+    sim = Simulator(graph, loss_rate, input_sum, 0.01, s_type)
+    t = sim.start()
+    print("finished in: ",  t)
 
 
 if __name__ == "__main__":
