@@ -1,11 +1,13 @@
 import networkx as nx
 import random
 import nodes
-import simulator
+import builders
 
-def addNodes(graph, numberToAdd, numberOfConnections, input, node_type, w=None, **kwargs):
+def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None,):
     n_nodes = len(graph)
     new_nodes = {}
+    sim_builder = builders.SimulatorBuilder()
+    sim_builder.build_with_simulator(simulator)
     #for n in graph.nodes:
      #   new_nodes[n] = graph.nodes[n]['flownode']
 
@@ -23,7 +25,7 @@ def addNodes(graph, numberToAdd, numberOfConnections, input, node_type, w=None, 
             aux_nodes.remove(a)
 
         graph.add_node(n)
-        new_nodes[n] = simulator.buildNode(n, node_type, input, connections, kwargs)
+        new_nodes[n] =sim_builder.buildNode(n, input, connections)
 
         for neighbour in connections:
             print(n, neighbour)

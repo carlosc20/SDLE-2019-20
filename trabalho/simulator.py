@@ -7,6 +7,7 @@ import nodes
 from nodes import *
 import random
 import math
+import events
 
 class Simulator:
 
@@ -31,6 +32,8 @@ class Simulator:
 
         self.special_node_type = None
         self.max_rounds = None
+
+        self.graph_events = {}
 
     def start(self):
         # primeira ronda de mensagens
@@ -73,16 +76,16 @@ class Simulator:
 
     
     def _create_events(self, message_list, timeout_list):
-        events = []
+        new_events = []
         for n in message_list:
             link_delay = self.graph.get_edge_data(n.src, n.dst)['weight']
-            events.append(Event(n, self.current_time + link_delay))
+            new_events.append(events.Event(n, self.current_time + link_delay))
         
         for t in timeout_list:
             link_delay = t.time
-            events.append(Event(t, self.current_time + link_delay))
+            new_events.append(events.Event(t, self.current_time + link_delay))
             
-        return events
+        return new_events
 
 
     def _handle_group_msg(self, group, graph):
@@ -184,22 +187,28 @@ class Simulator:
             if terminated:
                 new = []
                    
-            # TODO: por delay nos events
             self.pending += new
 
-            #if self.n_rounds == 5:
-                #self._addMembers(2, 2, 1, 10)
-             #   self._removeMembers(2)
-            
-            #self.pendingPrint()
+            self._handle_events()
 
         return self.current_time
 
 
+    def _handle_events(self):
+        for (k, v) in self.graph_events.items():
+            v.ticker += 1
+            if v.ticker == v.n_rounds:
+                if k == 'add_members':
+                    self._addMembers(v)
+                else:
+                    self._removeMembers(v)
+            if v.repeatable:
+                v.ticker = 0
+
     #input igual para todos os nodos adicionados
-    def _addMembers(self, numberToAdd, numberOfConnections, input, w=None):
-        graphGen.addNodes(self.graph, numberToAdd, numberOfConnections, input, self, w)
-        self.input_sum += input * numberToAdd
+    def _addMembers(self, add_e):
+        graphGen.addNodes(self.graph, add_e.numberToAdd, add_e.numberOfConnections, add_e.input, self, add_e.w)
+        self.input_sum += add_e.input * add_e.numberToAdd
 
         #assume average
         self.target_value = self.input_sum / len(self.graph)
@@ -208,8 +217,8 @@ class Simulator:
 
 
     #só usar com grafos maiores. perigosa
-    def _removeMembers(self, numberToRemove):
-        removed = graphGen.removeNodes(self.graph, numberToRemove) 
+    def _removeMembers(self, rem_e):
+        removed = graphGen.removeNodes(self.graph, rem_e.numberToRemove) 
         
         for r in removed:
             self.input_sum -= r.input 
@@ -228,9 +237,3 @@ class Simulator:
 
         nx.draw(self.graph, with_labels=True)
         plt.show()
-
-
-class Event:
-    def __init__(self, message, time):
-        self.message = message
-        self.time = time

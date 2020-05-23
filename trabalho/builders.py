@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import graphGen
 from nodes import *
 import simulator
+import events
 
 class SimulatorBuilder:
     def __init__(self):
@@ -41,7 +42,16 @@ class SimulatorBuilder:
     def with_timeout_protocol(self, timeout_value):
         self.simulator.base_node_type = "timeout"
         self.simulator.timeout_value = timeout_value
+
+    #(numero de nodos a adicionar, numero de conexções por nodo, input de cada nodo, ao fim de quantas rondas é ativado, se se repete, peso das conexões)
+    def with_scheduled_add_members_event(self, numberToAdd, numberOfConnections, input, n_rounds, repeatable,  w=None):
+        self.simulator.graph_events['add_members'] = events.AddMembers(numberToAdd, numberOfConnections, input, n_rounds, repeatable, w)
+
+
+    def with_scheduled_remove_members_event(self, numberToRemove, n_rounds, repeatable):
+        self.simulator.graph_events['remove_members'] = events.RemoveMembers(numberToRemove, n_rounds, repeatable)
   
+
     def _build_nodes_graph(self, graph, fanout, inputs):
         g_nodes = {}
         g_distances = {}
@@ -93,6 +103,7 @@ def main():
     sim_builder.with_loss_rate(0.5)
     sim_builder.with_agregation_type_and_confidence('average', 0.01)
     sim_builder.with_flowsums_termination()
+    sim_builder.with_scheduled_add_members_event(1,1,1,5,False,10)
     
     fanout = 1
     sim = sim_builder.build(fanout, G, inputs)
