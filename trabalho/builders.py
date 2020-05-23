@@ -120,23 +120,28 @@ def main():
     nx.draw(G, with_labels=True)
     plt.show()
         
-    sim_builder = SimulatorBuilder()
+    sim_builder = builders.SimulatorBuilder()
     #as an example, default is already 0
-    sim_builder.with_loss_rate(0.5)
+    sim_builder.with_loss_rate(0)
     sim_builder.with_agregation_type('average')
-    sim_builder.with_flowsums_termination()
-    sim.builder.with_timeout_protocol(40)
-    sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)
+    #sim_builder.with_flowsums_termination()
+    
+    #nodos ficam com resultados diferentes
+    #sim_builder.with_self_termination_by_rounds(50)
+    sim_builder.with_self_termination_by_min_dif(50, 0.01)
+    sim_builder.with_timeout_protocol(100)
+    #sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)
     
     fanout = 1
     sim = sim_builder.build(fanout, G, inputs)
     t = sim.start()
     print("finished in: ",  t)
-
+    
     print("Final estimates: ")
     for n in sim.graph:
-        node = graph.nodes[n]['flownode']
+        node = sim.graph.nodes[n]['flownode']
         print("node: ", n, " est: ", node.local_estimate)
+    
 
 
 if __name__ == "__main__":
