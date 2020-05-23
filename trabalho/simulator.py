@@ -28,8 +28,9 @@ class Simulator:
         self.base_node_type = "normal"
         self.timeout_value = None
 
-        self.special_node_type = None
+        self.node_termination_component = None
         self.max_rounds = None
+        self.min_dif = None
 
         self.graph_events = {}
 
@@ -80,8 +81,9 @@ class Simulator:
             new_events.append(events.Event(n, self.current_time + link_delay))
         
         for t in timeout_list:
-            link_delay = t.time
-            new_events.append(events.Event(t, self.current_time + link_delay))
+            if t != None:
+                link_delay = t.time
+                new_events.append(events.Event(t, self.current_time + link_delay))
             
         return new_events
 
@@ -113,7 +115,7 @@ class Simulator:
 
 
     # uses the sum of all flows as limit to termination. If the sum is equal to remainder convergion has been reached
-    def check_terminate_flowsums(self, graph, input_sum, confidence_value):
+    def check_termination_flowsums(self, graph, input_sum, confidence_value):
         flowsums = 0
         for n in graph.nodes:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
@@ -125,7 +127,7 @@ class Simulator:
 
 
     # uses RMSE as limit to termination
-    def check_terminate_rmse(self, graph, target_value, target_rmse):
+    def check_termination_rmse(self, graph, target_value, target_rmse):
             
         square_error_sum = 0
 
@@ -173,11 +175,12 @@ class Simulator:
             terminated = False
 
             if self.t_type is 'flowsums':
-                terminated = self.check_terminate_flowsums(self.graph, self.input_sum, self.confidence_value)
+                terminated = self.check_termination_flowsums(self.graph, self.input_sum, self.confidence_value)
             elif self.t_type is 'rmse':           
-                terminated = self.check_terminate_rmse(self.graph, self.target_value, self.confidence_value)
+                terminated = self.check_termination_rmse(self.graph, self.target_value, self.confidence_value)
             else:
-                print("unavailable")
+                #termina por os nodos deixarem de enviar msg
+                terminated = False
 
             if terminated:
                 new = []

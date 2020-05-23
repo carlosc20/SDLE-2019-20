@@ -25,7 +25,7 @@ def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None,)
             aux_nodes.remove(a)
 
         graph.add_node(n)
-        new_nodes[n] =sim_builder.buildNode(n, input, connections)
+        new_nodes[n] = sim_builder.buildNode(n, input, connections)
 
         for neighbour in connections:
             print(n, neighbour)

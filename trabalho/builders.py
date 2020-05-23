@@ -37,14 +37,23 @@ class SimulatorBuilder:
         self.simulator.t_type = "rmse"   
 
     
-    def with_self_termination(self, max_rounds):
-        self.simulator.special_node_type = "self_termination_node"
+    def with_self_termination_by_rounds(self, max_rounds):
+        self.simulator.t_type = "self"
+        self.simulator.node_termination_component = "max_rounds"
         self.simulator.max_rounds = max_rounds
+
+
+    def with_self_termination_by_min_dif(self, max_rounds, min_dif):
+        self.simulator.t_type = "self"
+        self.simulator.node_termination_component = "min_dif"
+        self.simulator.max_rounds = max_rounds
+        self.simulator.min_dif = min_dif
         
 
     def with_timeout_protocol(self, timeout_value):
         self.simulator.base_node_type = "timeout"
         self.simulator.timeout_value = timeout_value
+
 
     #(numero de nodos a adicionar, numero de conexções por nodo, input de cada nodo, ao fim de quantas rondas é ativado, se se repete, peso das conexões)
     def with_scheduled_add_members_event(self, numberToAdd, numberOfConnections, input, n_rounds, repeatable,  w=None):
@@ -76,7 +85,17 @@ class SimulatorBuilder:
         else:
             node = nodes.TimeoutFlowNode(id, neighbours, input, self.simulator.timeout_value)
 
-        #TODO if special node != None build special node (self terminate node) with base node
+        if self.simulator.node_termination_component == 'max_rounds':
+            component = nodes.SelfTerminateRoundsComponent(node, self.simulator.max_rounds)
+
+        elif self.simulator.node_termination_component == 'min_dif':
+            component = nodes.SelfTerminateDifComponent(node, self.simulator.max_rounds, self.simulator.min_dif)
+        
+        else:
+            component = None
+
+        node.set_termination_component(component)
+
         return node
 
     def build(self, fanout, graph, inputs):
@@ -113,6 +132,11 @@ def main():
     sim = sim_builder.build(fanout, G, inputs)
     t = sim.start()
     print("finished in: ",  t)
+
+    print("Final estimates: ")
+    for n in sim.graph:
+        node = graph.nodes[n]['flownode']
+        print("node: ", n, " est: ", node.local_estimate)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ class SimulatorEvent:
         self.ticker = 0
         self.repeatable = repeatable
 
+
 class AddMembers(SimulatorEvent):
     def __init__(self, numberToAdd, numberOfConnections, input, n_rounds, repeatable, w=None):
         super().__init__(n_rounds, repeatable)
