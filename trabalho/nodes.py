@@ -11,7 +11,6 @@ class FlowNode:
         self.degree = len(neighbours)
         self.flows = dict.fromkeys(neighbours, 0)
         self.estimates = dict.fromkeys(neighbours, 0)
-        self.timeout_time = timeout_time
 
     def addNeighbour(self, node):
         self.neighbours.append(node)
