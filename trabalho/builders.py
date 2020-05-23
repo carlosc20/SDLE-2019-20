@@ -101,7 +101,7 @@ def main():
     nx.draw(G, with_labels=True)
     plt.show()
         
-    sim_builder = builders.SimulatorBuilder()
+    sim_builder = SimulatorBuilder()
     #as an example, default is already 0
     sim_builder.with_loss_rate(0.5)
     sim_builder.with_agregation_type('average')
