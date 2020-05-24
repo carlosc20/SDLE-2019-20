@@ -80,11 +80,13 @@ class SimulatorBuilder:
         return self
   
 
-    def _build_nodes_graph(self, graph, fanout, inputs):
+    def _build_nodes_graph(self, input_graph, fanout, inputs):
         g_nodes = {}
         g_distances = {}
         inputs_sum = 0
         
+        graph = input_graph.copy()
+
         for n in graph:
             edges = [e for e in graph.edges(n)]
             neighbours = [n for n in graph.neighbors(n)]
@@ -145,6 +147,8 @@ def main():
     #sim_builder.with_self_termination_by_rounds(50)
     sim_builder.with_self_termination_by_min_dif(50, 0.01)
     sim_builder.with_timeout_protocol(100)
+    #inputs_by_node = dict.fromkeys(range(len(G)), 2)
+    #sim_builder.with_scheduled_change_inputs_event(inputs_by_node, 5)
     #sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)
     
     fanout = 1

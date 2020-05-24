@@ -45,16 +45,18 @@ class FlowNode:
 
 
     def transition_and_gen_msgs(self):
-        if self.termination_component != None:
+        if self.termination_component != None :
+            if not self.termination_component.working:
+                return []
             self.termination_component.prepare_check()
-
-        self._state_transition()
-
-        new = self.generate_messages()
-        if self.termination_component != None:
+            self._state_transition()
+            new = self.generate_messages()
             if self.termination_component.check_termination():
+                print("Node: ", self.id, " terminated")
                 new = []
-
+        else:
+            self._state_transition()
+            new = self.generate_messages()
         return new
 
 
@@ -191,34 +193,27 @@ class FUPGNode(FlowNode):
         return self.id
 
 
-
-
-
 class TimeoutFlowNode(FlowNode):
     def __init__(self, id, neighbours, input, timeout_value):
         super().__init__(id, neighbours, input)
         self.timeout_value = timeout_value
         self.latest_timeout = None
         self.round = 1
-        self.neighbors_arrived = dict.fromkeys(neighbours, 0)
+        self.neighbours_arrived = dict.fromkeys(neighbours, 0)
 
 
     def handle_messages(self, msgs):
         print("Node: ", self.id, " Storing Messages")
         for m in msgs:
-            self.neighbors_arrived[m.src] += 1
+            self.neighbours_arrived[m.src] += 1
             super()._handle_message(m)
         
-        minimum = min(self.neighbors_arrived.values())
-        print("min: ", minimum)
+        minimum = min(self.neighbours_arrived.values())
 
         new = []
         if minimum == self.round:
-            timeout, new = self.handle_transition()
-            if new:
-                self.latest_timeout = timeout
-            else:
-                self.latest_timeout = None
+            new = self.handle_transition()
+            self.round += 1
         return new 
 
 
@@ -227,15 +222,16 @@ class TimeoutFlowNode(FlowNode):
         print("Node: ", self.id, " Transitioning")
         new = super().transition_and_gen_msgs()
         
-        self.round += 1
-        timeout = Timeout(self.id, self.round, self.timeout_value)
-
         if self.termination_component != None and not self.termination_component.working:
             self.latest_timeout = None
-            timeout = None
+        else:
+            self.latest_timeout = Timeout(self.id, self.round, self.timeout_value)
 
-        return timeout, new
+        return new
 
+    def reset_rounds(self):
+        self.neighbours_arrived = dict.fromkeys(self.neighbours, 0)
+        self.round = 1
 
     def take_latest_timeout(self):
         t = self.latest_timeout
