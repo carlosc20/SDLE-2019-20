@@ -15,32 +15,39 @@ class SimulatorBuilder:
     #for adding members
     def build_with_simulator(self, simulator):
         self.simulator = simulator
+        return self
 
 
     def with_loss_rate(self, loss_rate):
         self.simulator.loss_rate = loss_rate
+        return self
 
 
     def with_agregation_type(self, aggregation_type):
         self.simulator.aggregation_type = aggregation_type
+        return self
 
 
     def with_confidence_value(self, confidence_value):
         self.simulator.confidence_value = confidence_value
+        return self
 
 
     def with_flowsums_termination(self):
         self.simulator.t_type = "flowsums"      
+        return self
 
 
     def with_rmse_termination(self):
         self.simulator.t_type = "rmse"   
+        return self
 
     
     def with_self_termination_by_rounds(self, max_rounds):
         self.simulator.t_type = "self"
         self.simulator.node_termination_component = "max_rounds"
         self.simulator.max_rounds = max_rounds
+        return self
 
 
     def with_self_termination_by_min_dif(self, max_rounds, min_dif):
@@ -48,20 +55,24 @@ class SimulatorBuilder:
         self.simulator.node_termination_component = "min_dif"
         self.simulator.max_rounds = max_rounds
         self.simulator.min_dif = min_dif
+        return self
         
 
     def with_timeout_protocol(self, timeout_value):
         self.simulator.base_node_type = "timeout"
         self.simulator.timeout_value = timeout_value
+        return self
 
 
     #(numero de nodos a adicionar, numero de conexções por nodo, input de cada nodo, ao fim de quantas rondas é ativado, se se repete, peso das conexões)
     def with_scheduled_add_members_event(self, numberToAdd, numberOfConnections, input, n_rounds, repeatable,  w=None):
         self.simulator.graph_events['add_members'] = events.AddMembers(numberToAdd, numberOfConnections, input, n_rounds, repeatable, w)
+        return self
 
 
     def with_scheduled_remove_members_event(self, numberToRemove, n_rounds, repeatable):
         self.simulator.graph_events['remove_members'] = events.RemoveMembers(numberToRemove, n_rounds, repeatable)
+        return self
   
 
     def _build_nodes_graph(self, graph, fanout, inputs):
@@ -120,10 +131,9 @@ def main():
     nx.draw(G, with_labels=True)
     plt.show()
         
-    sim_builder = builders.SimulatorBuilder()
+    sim_builder = SimulatorBuilder()
     #as an example, default is already 0
-    sim_builder.with_loss_rate(0)
-    sim_builder.with_agregation_type('average')
+    sim_builder.with_loss_rate(0).with_agregation_type('average')
     #sim_builder.with_flowsums_termination()
     
     #nodos ficam com resultados diferentes

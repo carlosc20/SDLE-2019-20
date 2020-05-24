@@ -34,6 +34,7 @@ class Simulator:
 
         self.graph_events = {}
 
+
     def start(self):
         # primeira ronda de mensagens
         messages = []
@@ -46,11 +47,58 @@ class Simulator:
                 
         self.pending += self._create_events(messages, timeouts)
 
-        # run the simulation loop
-        return self.run_loop()
+        return self._run_loop()
     
 
+
+    def _run_loop(self):
+        while len(self.pending) > 0:
+            
+            # evento com menor delay, delay necessario?
+            messages, time = self._next_messages()
+            self.current_time = time
+            self.n_rounds += 1
+            
+            inbox = {} # destino -> lista de msgs
+            timeouts = {}
+            for m in messages:
+
+                if type(m) is message.Timeout:
+                    timeouts[m.dst] = m
+                    continue
+
+                # drop message
+                if random.random() <= self.loss_rate:
+                    continue
+
+                inbox.setdefault(m.dst, []).append(m)
+                            
+            # novas mensagens geradas               
+            new = self._handle_group_msg(inbox, self.graph)
+
+            if self.base_node_type == 'timeout':
+                new += self._handle_timeouts(timeouts, self.graph)
+
+            terminated = False
+
+            if self.t_type is 'flowsums':
+                terminated = self._check_termination_flowsums(self.graph, self.input_sum, self.confidence_value)
+            elif self.t_type is 'rmse':           
+                terminated = self._check_termination_rmse(self.graph, self.target_value, self.confidence_value)
+            else:
+                #termina por os nodos deixarem de enviar msg
+                terminated = False
+
+            if terminated:
+                new = []
+                
+            self.pending += new
+
+            self._handle_events()
+
+        return self.current_time
     
+
     # vai buscar e remove do pending as mensagens com menor delay
     # devolve lista de mensagens e delay
     def _next_messages(self):
@@ -88,9 +136,9 @@ class Simulator:
         return new_events
 
 
-    def _handle_group_msg(self, group, graph):
+    def _handle_group_msg(self, inbox, graph):
         new = [] 
-        for dst, msgs in group.items():
+        for dst, msgs in inbox.items():
             node = graph.nodes[dst]['flownode']
             gen = node.handle_messages(msgs)  
             new += gen
@@ -115,7 +163,7 @@ class Simulator:
 
 
     # uses the sum of all flows as limit to termination. If the sum is equal to remainder convergion has been reached
-    def check_termination_flowsums(self, graph, input_sum, confidence_value):
+    def _check_termination_flowsums(self, graph, input_sum, confidence_value):
         flowsums = 0
         for n in graph.nodes:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
@@ -127,7 +175,7 @@ class Simulator:
 
 
     # uses RMSE as limit to termination
-    def check_termination_rmse(self, graph, target_value, target_rmse):
+    def _check_termination_rmse(self, graph, target_value, target_rmse):
             
         square_error_sum = 0
 
@@ -140,56 +188,7 @@ class Simulator:
         return rmse < target_rmse
 
 
-    def run_loop(self):
-        while len(self.pending) > 0:
-            #print(self.pending)
-            # evento com menor delay, delay necessario?
-            messages, time = self._next_messages()
-            self.current_time = time
-            self.n_rounds += 1
-            # dict destino -> lista de msgs
-            group = {}
-            timeouts = {}
-            for m in messages:
-
-                if type(m) is message.Timeout:
-                    timeouts[m.dst] = m
-                    continue
-
-                # drop message
-                if random.random() <= self.loss_rate:
-                    continue
-
-                g = group.get(m.dst)
-                if not g:
-                    g = []
-                    group[m.dst] = g
-
-                g.append(m)
-                            
-            new = self._handle_group_msg(group, self.graph)
-
-            if self.base_node_type == 'timeout':
-                new += self._handle_timeouts(timeouts, self.graph)
-
-            terminated = False
-
-            if self.t_type is 'flowsums':
-                terminated = self.check_termination_flowsums(self.graph, self.input_sum, self.confidence_value)
-            elif self.t_type is 'rmse':           
-                terminated = self.check_termination_rmse(self.graph, self.target_value, self.confidence_value)
-            else:
-                #termina por os nodos deixarem de enviar msg
-                terminated = False
-
-            if terminated:
-                new = []
-                   
-            self.pending += new
-
-            self._handle_events()
-
-        return self.current_time
+    
 
 
     def _handle_events(self):
