@@ -43,7 +43,7 @@ class Simulator:
             node = self.graph.nodes[n]['flownode']
             messages += node.generate_messages()
             if self.base_node_type == "timeout":
-                timeouts.append(message.Timeout(n, self.timeout_value))
+                timeouts.append(message.Timeout(n, 1, self.timeout_value))
                 
         self.pending += self._create_events(messages, timeouts)
 
@@ -153,11 +153,17 @@ class Simulator:
     def _handle_timeouts(self, timeouts, graph):
         newTimeouts = []
         newMsgs = []
-        for dst in timeouts.keys():
+        for n in self.graph.nodes:
+            node = graph.nodes[n]['flownode']
+            if node.latest_timeout != None:
+                newTimeouts.append(node.take_latest_timeout())
+
+        for dst, timeout in timeouts.items():
             node = graph.nodes[dst]['flownode']
-            t, msgs = node.handle_timeout()
-            newTimeouts.append(t)
-            newMsgs += msgs
+            if not node.old_timeout(timeout) :
+                t, msgs = node.handle_transition()
+                newTimeouts.append(t)
+                newMsgs += msgs
 
         return self._create_events(newMsgs, newTimeouts)
 
@@ -188,19 +194,25 @@ class Simulator:
         return rmse < target_rmse
 
 
-    
-
-
     def _handle_events(self):
         for (k, v) in self.graph_events.items():
             v.ticker += 1
             if v.ticker == v.n_rounds:
                 if k == 'add_members':
                     self._addMembers(v)
-                else:
+                elif k == 'remove_members':
                     self._removeMembers(v)
+                else:
+                    self._changeInputs(v)
             if v.repeatable:
                 v.ticker = 0
+
+
+    def _changeInputs(self, ci):
+        for (n, i) in ci.input_by_nodes.items():
+            node = self.graph.nodes[n]['flownode']
+            node.input = i
+
 
     #input igual para todos os nodos adicionados
     def _addMembers(self, add_e):

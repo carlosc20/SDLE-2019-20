@@ -198,25 +198,53 @@ class TimeoutFlowNode(FlowNode):
     def __init__(self, id, neighbours, input, timeout_value):
         super().__init__(id, neighbours, input)
         self.timeout_value = timeout_value
+        self.latest_timeout = None
+        self.round = 1
+        self.neighbors_arrived = dict.fromkeys(neighbours, 0)
 
 
     def handle_messages(self, msgs):
-        print("Storing Messages")
+        print("Node: ", self.id, " Storing Messages")
         for m in msgs:
+            self.neighbors_arrived[m.src] += 1
             super()._handle_message(m)
-        return []  
+        
+        minimum = min(self.neighbors_arrived.values())
+        print("min: ", minimum)
+
+        new = []
+        if minimum == self.round:
+            timeout, new = self.handle_transition()
+            if new:
+                self.latest_timeout = timeout
+            else:
+                self.latest_timeout = None
+        return new 
 
 
     # returns (timeout, [msg])
-    def handle_timeout(self):
-        print("Timeout arrived")
+    def handle_transition(self):
+        print("Node: ", self.id, " Transitioning")
         new = super().transition_and_gen_msgs()
-        timeout = Timeout(self.id, self.timeout_value)
+        
+        self.round += 1
+        timeout = Timeout(self.id, self.round, self.timeout_value)
 
         if self.termination_component != None and not self.termination_component.working:
+            self.latest_timeout = None
             timeout = None
 
         return timeout, new
+
+
+    def take_latest_timeout(self):
+        t = self.latest_timeout
+        self.latest_timeout = None
+        return t
+
+    def old_timeout(self, timeout):
+        return timeout.round < self.round
+        
 
 
 class SelfTerminateRoundsComponent:

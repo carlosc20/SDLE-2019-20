@@ -73,6 +73,11 @@ class SimulatorBuilder:
     def with_scheduled_remove_members_event(self, numberToRemove, n_rounds, repeatable):
         self.simulator.graph_events['remove_members'] = events.RemoveMembers(numberToRemove, n_rounds, repeatable)
         return self
+
+    # input_by_node = {node:input,....}
+    def with_scheduled_change_inputs_event(self, input_by_node, n_rounds):
+        self.simulator.graph_events['change_inputs'] = events.ChangeInputs(input_by_node, n_rounds)
+        return self
   
 
     def _build_nodes_graph(self, graph, fanout, inputs):
