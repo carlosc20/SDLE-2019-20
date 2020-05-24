@@ -153,8 +153,9 @@ def main():
     
     fanout = 1
     sim = sim_builder.build(fanout, G, inputs)
-    t = sim.start()
-    print("finished in: ",  t)
+    t, c, r = sim.start()
+    
+    print("finished in: ",  t, " with ", c, " messages sent", " rounds: ", r)
     
     print("Final estimates: ")
     for n in sim.graph:
