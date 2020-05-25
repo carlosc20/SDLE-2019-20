@@ -80,7 +80,7 @@ class SimulatorBuilder:
         return self
   
 
-    def _build_nodes_graph(self, input_graph, fanout, inputs):
+    def _build_nodes_graph(self, input_graph, inputs):
         g_nodes = {}
         g_distances = {}
         inputs_sum = 0
@@ -116,9 +116,8 @@ class SimulatorBuilder:
 
         return node
 
-    def build(self, fanout, graph, inputs):
-        #TODO fanout
-        graph, inputs_sum = self._build_nodes_graph(graph, fanout, inputs)
+    def build(self, graph, inputs):
+        graph, inputs_sum = self._build_nodes_graph(graph, inputs)
         
         self.simulator.input_sum = inputs_sum
         if self.simulator.aggregation_type == 'average':            
@@ -152,7 +151,7 @@ def main():
     #sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)
     
     fanout = 1
-    sim = sim_builder.build(fanout, G, inputs)
+    sim = sim_builder.build(G, inputs)
     t, c, r = sim.start()
     
     print("finished in: ",  t, " with ", c, " messages sent", " rounds: ", r)

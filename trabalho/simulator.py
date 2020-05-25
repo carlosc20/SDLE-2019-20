@@ -93,7 +93,8 @@ class Simulator:
                 
             self.pending += new
             
-            self._timeout_cleanup()
+            if self.base_node_type == 'timeout':
+                self._timeout_cleanup()
 
             self._message_count(new)
 
@@ -189,13 +190,14 @@ class Simulator:
                     if type(e.message) is message.Timeout:
                         self.pending.remove(e)
                     
+                    
     # uses the sum of all flows as limit to termination. If the sum is equal to remainder convergion has been reached
     def _check_termination_flowsums(self, graph, input_sum, confidence_value):
         flowsums = 0
         for n in graph.nodes:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
         
-        print('flowsums: ', flowsums)
+        #print('flowsums: ', flowsums)
         r_up = input_sum % len(graph) + confidence_value
         r_down = input_sum % len(graph) - confidence_value
         return flowsums < r_up and flowsums > r_down
@@ -210,7 +212,7 @@ class Simulator:
             node = graph.nodes[n]['flownode']
             square_error_sum += (node.local_estimate - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph))
-        print('rmse: ', rmse)
+        #print('rmse: ', rmse)
 
         return rmse < target_rmse
 

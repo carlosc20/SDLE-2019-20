@@ -27,7 +27,7 @@ class FlowNode:
         del self.flows[node]
         del self.estimates[node]
         self.degree -= 1
-        print("removed: ", self.flows, " " , self.estimates)
+        #print("removed: ", self.flows, " " , self.estimates)
 
     def handle_messages(self, msgs):
 
@@ -52,7 +52,7 @@ class FlowNode:
             self._state_transition()
             new = self.generate_messages()
             if self.termination_component.check_termination():
-                print("Node: ", self.id, " terminated")
+               # print("Node: ", self.id, " terminated")
                 new = []
         else:
             self._state_transition()
@@ -71,9 +71,9 @@ class FlowNode:
             self.flows[fk] += self.local_estimate - ev
             self.estimates[ek] = self.local_estimate
         
-        print("node: ", self.id)
-        print("Flows: ",self.flows)
-        print("Estimates: ", self.estimates, "\n")
+        #print("node: ", self.id)
+        #print("Flows: ",self.flows)
+        #print("Estimates: ", self.estimates, "\n")
 
     
     def generate_messages(self):
@@ -203,7 +203,7 @@ class TimeoutFlowNode(FlowNode):
 
 
     def handle_messages(self, msgs):
-        print("Node: ", self.id, " Storing Messages")
+       # print("Node: ", self.id, " Storing Messages")
         for m in msgs:
             self.neighbours_arrived[m.src] += 1
             super()._handle_message(m)
@@ -219,7 +219,7 @@ class TimeoutFlowNode(FlowNode):
 
     # returns (timeout, [msg])
     def handle_transition(self):
-        print("Node: ", self.id, " Transitioning")
+        #print("Node: ", self.id, " Transitioning")
         new = super().transition_and_gen_msgs()
         
         if self.termination_component != None and not self.termination_component.working:
@@ -258,7 +258,7 @@ class SelfTerminateRoundsComponent:
     def check_termination(self):
         if(self.working):
             self.rounds += 1
-            print("check_termination rounds:", self.rounds)
+            #print("check_termination rounds:", self.rounds)
             if(self.rounds == self.max_rounds):
                 self.working = False
                 return True
@@ -285,7 +285,7 @@ class SelfTerminateDifComponent:
     def check_termination(self):
         if(self.working):
             dif = abs((self.node.local_estimate - self.prev_estimate)) / self.node.local_estimate
-            print("check_termination: dif: ", dif, " rounds:", self.rounds)
+            #print("check_termination: dif: ", dif, " rounds:", self.rounds)
             if(dif <= self.min_dif):
                 self.rounds += 1
                 if self.rounds == self.max_rounds:
