@@ -1,6 +1,7 @@
 import message
 from message import *
 import math
+import random
 
 class FlowNode:
     def __init__(self, id, neighbours, input):
@@ -83,6 +84,50 @@ class FlowNode:
 
 
 
+class UnicastFlowNode(FlowNode):
+    def __init__(self, id, neighbours, input):
+        super().__init__(id, neighbours, input)
+        self.chosen_neighbour = self._choose_neighbour()
+
+    def generate_messages(self):
+        msgs = []
+        n = self.chosen_neighbour
+        msgs.append(FlowMessage(self.id, n, self.flows[n], self.estimates[n]))
+        return msgs
+
+    def _state_transition(self):
+        sum_flows = sum(self.flows.values())
+        sum_estimates = sum(self.estimates.values())
+        self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
+
+        n = self.chosen_neighbour = self._choose_neighbour()
+
+        self.flows[n] += self.local_estimate - self.estimates[n]
+        self.estimates[n] = self.local_estimate
+
+    def _choose_neighbour(self):
+        # escolhido uniformemente
+        return random.choice(self.neighbours)
+
+
+
+
+class EvaluatedUnicastFlowNode(UnicastFlowNode):
+    def __init__(self, id, neighbours, input):
+        super().__init__(id, neighbours, input)
+
+    def _choose_neighbour(self):
+        max_d = 0 # max discrepancy
+        node = None
+        for n in self.neighbours:
+            d = abs(self.local_estimate - self.estimates[n])
+            if d > max_d:
+                node = n
+                max_d = d
+
+        return node
+
+    
 
 class TimeoutFlowNode(FlowNode):
     def __init__(self, id, neighbours, input, timeout_value):
