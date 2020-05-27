@@ -24,3 +24,9 @@ class RemoveMembers(SimulatorEvent):
     def __init__(self, numberToRemove, n_rounds, repeatable):
         super().__init__(n_rounds, repeatable)
         self.numberToRemove = numberToRemove
+
+
+class ChangeInputs(SimulatorEvent):
+    def __init__(self, input_by_nodes, n_rounds):
+        super().__init__(n_rounds, False)
+        self.input_by_nodes = input_by_nodes

@@ -27,7 +27,7 @@ class FlowNode:
         del self.flows[node]
         del self.estimates[node]
         self.degree -= 1
-        print("removed: ", self.flows, " " , self.estimates)
+        #print("removed: ", self.flows, " " , self.estimates)
 
     def handle_messages(self, msgs):
 
@@ -44,16 +44,18 @@ class FlowNode:
 
 
     def transition_and_gen_msgs(self):
-        if self.termination_component is not None:
+        if self.termination_component != None :
+            if not self.termination_component.working:
+                return []
             self.termination_component.prepare_check()
-
-        self._state_transition()
-
-        new = self.generate_messages()
-        if self.termination_component is not None:
+            self._state_transition()
+            new = self.generate_messages()
             if self.termination_component.check_termination():
-                new.clear()
-
+               # print("Node: ", self.id, " terminated")
+                new = []
+        else:
+            self._state_transition()
+            new = self.generate_messages()
         return new
 
 
@@ -67,9 +69,9 @@ class FlowNode:
             self.estimates[n] = self.local_estimate
 
         
-        print("node: ", self.id)
-        print("Flows: ",self.flows)
-        print("Estimates: ", self.estimates, "\n")
+        #print("node: ", self.id)
+        #print("Flows: ",self.flows)
+        #print("Estimates: ", self.estimates, "\n")
 
     
     def generate_messages(self):
@@ -86,25 +88,50 @@ class TimeoutFlowNode(FlowNode):
     def __init__(self, id, neighbours, input, timeout_value):
         super().__init__(id, neighbours, input)
         self.timeout_value = timeout_value
+        self.latest_timeout = None
+        self.round = 1
+        self.neighbours_arrived = dict.fromkeys(neighbours, 0)
 
 
     def handle_messages(self, msgs):
-        print("Storing Messages")
+       # print("Node: ", self.id, " Storing Messages")
         for m in msgs:
+            self.neighbours_arrived[m.src] += 1
             super()._handle_message(m)
-        return []  
+        
+        minimum = min(self.neighbours_arrived.values())
+
+        new = []
+        if minimum == self.round:
+            new = self.handle_transition()
+            self.round += 1
+        return new 
 
 
     # returns (timeout, [msg])
-    def handle_timeout(self):
-        print("Timeout arrived")
+    def handle_transition(self):
+        #print("Node: ", self.id, " Transitioning")
         new = super().transition_and_gen_msgs()
-        timeout = Timeout(self.id, self.timeout_value)
-
+        
         if self.termination_component != None and not self.termination_component.working:
-            timeout = None
+            self.latest_timeout = None
+        else:
+            self.latest_timeout = Timeout(self.id, self.round, self.timeout_value)
 
-        return timeout, new
+        return new
+
+    def reset_rounds(self):
+        self.neighbours_arrived = dict.fromkeys(self.neighbours, 0)
+        self.round = 1
+
+    def take_latest_timeout(self):
+        t = self.latest_timeout
+        self.latest_timeout = None
+        return t
+
+    def old_timeout(self, timeout):
+        return timeout.round < self.round
+        
 
 
 class SelfTerminateRoundsComponent:
@@ -122,7 +149,7 @@ class SelfTerminateRoundsComponent:
     def check_termination(self):
         if(self.working):
             self.rounds += 1
-            print("check_termination rounds:", self.rounds)
+            #print("check_termination rounds:", self.rounds)
             if(self.rounds == self.max_rounds):
                 self.working = False
                 return True
@@ -149,7 +176,7 @@ class SelfTerminateDifComponent:
     def check_termination(self):
         if(self.working):
             dif = abs((self.node.local_estimate - self.prev_estimate)) / self.node.local_estimate
-            print("check_termination: dif: ", dif, " rounds:", self.rounds)
+            #print("check_termination: dif: ", dif, " rounds:", self.rounds)
             if(dif <= self.min_dif):
                 self.rounds += 1
                 if self.rounds == self.max_rounds:

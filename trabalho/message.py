@@ -6,9 +6,10 @@ class Message:
 
 
 class Timeout(Message):
-    def __init__(self, src, time):
+    def __init__(self, src, round, time):
         self.src = src
         self.dst = src
+        self.round = round
         self.time = time
 
 
