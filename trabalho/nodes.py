@@ -84,15 +84,16 @@ class FlowNode:
 
 
 
-class UnicastFlowNode(FlowNode):
-    def __init__(self, id, neighbours, input):
+class MulticastFlowNode(FlowNode):
+    def __init__(self, id, neighbours, input, multi):
         super().__init__(id, neighbours, input)
-        self.chosen_neighbour = self._choose_neighbour()
+        self.multi = multi
+        self.chosen_neighbours = self._choose_neighbours()
 
     def generate_messages(self):
         msgs = []
-        n = self.chosen_neighbour
-        msgs.append(FlowMessage(self.id, n, self.flows[n], self.estimates[n]))
+        for n in self.chosen_neighbours:
+            msgs.append(FlowMessage(self.id, n, self.flows[n], self.estimates[n]))
         return msgs
 
     def _state_transition(self):
@@ -100,35 +101,32 @@ class UnicastFlowNode(FlowNode):
         sum_estimates = sum(self.estimates.values())
         self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
 
-        n = self.chosen_neighbour = self._choose_neighbour()
+        self.chosen_neighbours = self._choose_neighbours()
 
-        self.flows[n] += self.local_estimate - self.estimates[n]
-        self.estimates[n] = self.local_estimate
+        for n in self.chosen_neighbours:
+            self.flows[n] += self.local_estimate - self.estimates[n]
+            self.estimates[n] = self.local_estimate
 
-    def _choose_neighbour(self):
+
+    def _choose_neighbours(self):
         # escolhido uniformemente
-        return random.choice(self.neighbours)
+        return random.sample(self.neighbours, self.multi)
 
 
 
 
-class EvaluatedUnicastFlowNode(UnicastFlowNode):
-    def __init__(self, id, neighbours, input):
-        super().__init__(id, neighbours, input)
-        self.chosen_neighbour = super()._choose_neighbour()
 
-    def _choose_neighbour(self):
-        max_d = 0 # max discrepancy
-        node = None
-        for n in self.neighbours:
-            d = abs(self.local_estimate - self.estimates[n])
-            if d > max_d:
-                node = n
-                max_d = d
+class EvaluatedMulticastFlowNode(MulticastFlowNode):
+    def __init__(self, id, neighbours, input, multi):
+        super().__init__(id, neighbours, input, multi)
+        self.chosen_neighbours = super()._choose_neighbours()
 
-        return node
+    def _choose_neighbours(self):
+        discrepancies = list((n, self.local_estimate - self.estimates[n]) for n in self.neighbours)
+        return sorted(discrepancies, key=lambda pair: pair[1], reverse=True)[:self.multi]
 
     
+
 
 class TimeoutFlowNode(FlowNode):
     def __init__(self, id, neighbours, input, timeout_value):
@@ -178,7 +176,6 @@ class TimeoutFlowNode(FlowNode):
     def old_timeout(self, timeout):
         return timeout.round < self.round
         
-
 
 class SelfTerminateRoundsComponent:
     def __init__(self, node, max_rounds):
