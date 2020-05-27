@@ -115,6 +115,7 @@ class UnicastFlowNode(FlowNode):
 class EvaluatedUnicastFlowNode(UnicastFlowNode):
     def __init__(self, id, neighbours, input):
         super().__init__(id, neighbours, input)
+        self.chosen_neighbour = super()._choose_neighbour()
 
     def _choose_neighbour(self):
         max_d = 0 # max discrepancy
