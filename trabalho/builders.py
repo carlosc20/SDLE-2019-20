@@ -58,6 +58,12 @@ class SimulatorBuilder:
         return self
         
 
+    def with_unicast_protocol(self):
+        self.simulator.base_node_type = "unicast"
+
+    def with_evaluated_unicast_protocol(self):
+        self.simulator.base_node_type = "eunicast"
+
     def with_timeout_protocol(self, timeout_value):
         self.simulator.base_node_type = "timeout"
         self.simulator.timeout_value = timeout_value
@@ -100,6 +106,10 @@ class SimulatorBuilder:
     def buildNode(self, id, input, neighbours):
         if self.simulator.base_node_type == 'normal':
             node = nodes.FlowNode(id, neighbours, input)
+        elif self.simulator.base_node_type == 'unicast':
+            node = nodes.UnicastFlowNode(id, neighbours, input)
+        elif self.simulator.base_node_type == 'eunicast':
+            node = nodes.EvaluatedUnicastFlowNode(id, neighbours, input)
         else:
             node = nodes.TimeoutFlowNode(id, neighbours, input, self.simulator.timeout_value)
 
@@ -139,6 +149,7 @@ def main():
         
     sim_builder = SimulatorBuilder()
     #as an example, default is already 0
+    sim_builder.with_evaluated_unicast_protocol()
     sim_builder.with_loss_rate(0).with_agregation_type('average')
     #sim_builder.with_flowsums_termination()
     
