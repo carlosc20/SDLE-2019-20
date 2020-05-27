@@ -31,8 +31,7 @@ class FlowNode:
 
     def handle_messages(self, msgs):
 
-        for m in msgs:
-            self._handle_message(m)
+        map(self._handle_message, msgs)
 
         return self.transition_and_gen_msgs()
         
@@ -45,15 +44,15 @@ class FlowNode:
 
 
     def transition_and_gen_msgs(self):
-        if self.termination_component != None:
+        if self.termination_component is not None:
             self.termination_component.prepare_check()
 
         self._state_transition()
 
         new = self.generate_messages()
-        if self.termination_component != None:
+        if self.termination_component is not None:
             if self.termination_component.check_termination():
-                new = []
+                new.clear()
 
         return new
 
@@ -62,12 +61,11 @@ class FlowNode:
         sum_flows = sum(self.flows.values())
         sum_estimates = sum(self.estimates.values())
         self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
-            
-        
-        
-        for (fk, (ek, ev)) in zip(self.flows.keys(), self.estimates.items()):
-            self.flows[fk] += self.local_estimate - ev
-            self.estimates[ek] = self.local_estimate
+
+        for n in self.neighbours:
+            self.flows[n] += self.local_estimate - self.estimates[n]
+            self.estimates[n] = self.local_estimate
+
         
         print("node: ", self.id)
         print("Flows: ",self.flows)
@@ -80,116 +78,6 @@ class FlowNode:
             msgs.append(FlowMessage(self.id, n, f, e))
 
         return msgs
-
-
-
-# Flow Updating with Preferential Grouping
-class FUPGNode(FlowNode):
-    def __init__(self, id, neighbours, input):
-        super().__init__(id, neighbours, input)
-        self.participants = {}
-        self.next_leader = self.id
-        self.rp = self.initRP() # reduction potential
-        self.rps = dict.fromkeys(neighbours, 0) # ?
-
-    def handle_messages(self, msgs):
-        for m in msgs:
-            super()._handle_message(m)
-        return []  
-
-    def generate_messages(self):
-        msgs = []
-        for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
-            flow = None
-            if participants.contains(n):
-                flow = f
-            
-            msgs.append(FUPGMessage(self.id, n, flow, estimate(), self.next_leader, self.rp))
-
-        return msgs
-
-    def handle_messages(self, msgs):
-
-        map(self._handle_message, msgs)
-        return self.transition_and_gen_msgs()
-        
-        
-    def _handle_message(self, msg):
-        # TODO supostamente isto faz parte do transition, n sei se afeta a termination isto ser chamado antes das cenas de self terminate
-
-        sender = msg.src
-
-        # flows
-        if msg.flow is not None:
-            self.flows[sender] = -msg.flow
-
-        # estimates
-        if sender not in self.participants:
-            self.estimates[sender] = msg.estimate
-
-        local_estimate = estimate()
-
-        # rp
-        self.rps[sender] = msg.rp
-
-        #participants
-        if msg.leader == self.id:
-            self.participants.append(sender)
-
-
-    def _state_transition(self):
-
-        leader = self.next_leader
-
-        # two neighbors cannot choose each other as leader in the same round
-        if(leader != self.id and leader in self.participants): 
-            if(self.id > leader):
-                self.participants.remove(leader)
-            else:
-                self.participants.add(self.id)
-                leader = self.id
-
-        if len(self.participants) != 0:
-
-            sum_estimates = sum([self.estimates[p] for p in self.participants])
-            self.local_estimate = sum_estimates / len(participants)
-
-
-            for p in self.participants:
-                if p == self.id:
-                    continue
-                self.flows[p] += self.local_estimate - self.estimates[p]
-                self.estimates[p] = self.local_estimate
-
-        if leader != self.id:
-            self.next_leader = self.id
-        else:
-            self.next_leader = self.decideLeader()
-
-        self.rp = self.computeRP(leader)
-
-            
-
-    def estimate(self):
-        return self.input - sum(self.flows.values())
-
-    def initRP(self):
-        return 0 #TODO
-
-    # computes a value representing the expected variance reduction (reduction potential)
-    def computeRP(self, leader):
-        self.estimates
-        self.rps #?
-        #TODO magia
-        return self.rp
-
-    def decideLeader(self):
-        self.rps #?
-        self.rp
-        self.participants
-        #TODO magia
-        return self.id
-
 
 
 
