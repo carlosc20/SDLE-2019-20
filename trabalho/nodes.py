@@ -110,6 +110,9 @@ class MulticastFlowNode(FlowNode):
 
     def _choose_neighbours(self):
         # escolhido uniformemente
+        if len(self.neighbours) <= self.multi:
+            return self.neighbours
+
         return random.sample(self.neighbours, self.multi)
 
 
@@ -122,12 +125,15 @@ class EvaluatedMulticastFlowNode(MulticastFlowNode):
         self.chosen_neighbours = super()._choose_neighbours()
 
     def _choose_neighbours(self):
+        if len(self.neighbours) <= self.multi:
+            return self.neighbours
+
         discrepancies = list((n, self.local_estimate - self.estimates[n]) for n in self.neighbours)
         return sorted(discrepancies, key=lambda pair: pair[1], reverse=True)[:self.multi]
 
+
+
     
-
-
 class TimeoutFlowNode(FlowNode):
     def __init__(self, id, neighbours, input, timeout_value):
         super().__init__(id, neighbours, input)
@@ -175,8 +181,23 @@ class TimeoutFlowNode(FlowNode):
 
     def old_timeout(self, timeout):
         return timeout.round < self.round
-        
 
+
+class TimeoutMulticastFlowNode(MulticastFlowNode, TimeoutFlowNode):
+    def __init__(self, id, neighbours, input, multi, timeout_value):
+        MulticastFlowNode.__init__(self, id, neighbours, input, multi)
+        TimeoutFlowNode.__init__(self, id, neighbours, input, timeout_value)
+
+
+class TimeoutEvaluatedMulticastFlowNode(EvaluatedMulticastFlowNode, TimeoutFlowNode):
+    def __init__(self, id, neighbours, input, multi, timeout_value):
+        EvaluatedMulticastFlowNode.__init__(self, id, neighbours, input, multi)
+        TimeoutFlowNode.__init__(self, id, neighbours, input, timeout_value)
+
+
+
+
+    
 class SelfTerminateRoundsComponent:
     def __init__(self, node, max_rounds):
         self.node = node

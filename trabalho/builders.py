@@ -15,6 +15,7 @@ class SimulatorBuilder:
     #for adding members
     def build_with_simulator(self, simulator):
         self.simulator = simulator
+        self.simulator.is_timeout = False
         return self
 
 
@@ -69,7 +70,7 @@ class SimulatorBuilder:
         return self
 
     def with_timeout_protocol(self, timeout_value):
-        self.simulator.base_node_type = "timeout"
+        self.simulator.is_timeout = True
         self.simulator.timeout_value = timeout_value
         return self
 
@@ -108,14 +109,29 @@ class SimulatorBuilder:
 
 
     def buildNode(self, id, input, neighbours):
+
         if self.simulator.base_node_type == 'normal':
-            node = nodes.FlowNode(id, neighbours, input)
+            if self.simulator.is_timeout:
+                node = nodes.FlowNode(id, neighbours, input)
+            else:
+                node = nodes.TimeoutFlowNode(id, neighbours, input, self.simulator.timeout_value)
+
         elif self.simulator.base_node_type == 'multicast':
-            node = nodes.MulticastFlowNode(id, neighbours, input, self.multi)
+            if self.simulator.is_timeout:
+                node = nodes.MulticastFlowNode(id, neighbours, input, self.multi)
+            else:
+                node = nodes.TimeoutMulticastFlowNode(id, neighbours, input, self.multi, self.simulator.timeout_value)
+
         elif self.simulator.base_node_type == 'emulticast':
-            node = nodes.EvaluatedMulticastFlowNode(id, neighbours, input, self.multi)
+            if self.simulator.is_timeout:
+                node = nodes.EvaluatedMulticastFlowNode(id, neighbours, input, self.multi)
+            else:
+                node = nodes.TimeoutEvaluatedMulticastFlowNode(id, neighbours, input, self.multi, self.simulator.timeout_value)
+
         else:
-            node = nodes.TimeoutFlowNode(id, neighbours, input, self.simulator.timeout_value)
+            raise
+
+
 
         if self.simulator.node_termination_component == 'max_rounds':
             component = nodes.SelfTerminateRoundsComponent(node, self.simulator.max_rounds)
