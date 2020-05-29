@@ -31,8 +31,8 @@ class FlowNode:
         #print("removed: ", self.flows, " " , self.estimates)
 
     def handle_messages(self, msgs):
-
-        map(self._handle_message, msgs)
+        for m in msgs:
+            self.handle_message(m)
 
         return self.transition_and_gen_msgs()
         
@@ -64,7 +64,7 @@ class FlowNode:
         sum_flows = sum(self.flows.values())
         sum_estimates = sum(self.estimates.values())
         self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
-
+        
         for n in self.neighbours:
             self.flows[n] += self.local_estimate - self.estimates[n]
             self.estimates[n] = self.local_estimate
@@ -193,8 +193,6 @@ class TimeoutEvaluatedMulticastFlowNode(EvaluatedMulticastFlowNode, TimeoutFlowN
     def __init__(self, id, neighbours, input, multi, timeout_value):
         EvaluatedMulticastFlowNode.__init__(self, id, neighbours, input, multi)
         TimeoutFlowNode.__init__(self, id, neighbours, input, timeout_value)
-
-
 
 
     

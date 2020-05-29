@@ -42,8 +42,8 @@ class SimulatorBuilder:
     def with_rmse_termination(self):
         self.simulator.t_type = "rmse"   
         return self
-
     
+
     def with_self_termination_by_rounds(self, max_rounds):
         self.simulator.t_type = "self"
         self.simulator.node_termination_component = "max_rounds"
