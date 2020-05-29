@@ -32,7 +32,7 @@ class FlowNode:
 
     def handle_messages(self, msgs):
         for m in msgs:
-            self.handle_message(m)
+            self._handle_message(m)
 
         return self.transition_and_gen_msgs()
         
@@ -110,10 +110,12 @@ class MulticastFlowNode(FlowNode):
 
     def _choose_neighbours(self):
         # escolhido uniformemente
+
         if len(self.neighbours) <= self.multi:
             return self.neighbours
 
-        return random.sample(self.neighbours, self.multi)
+        chosen = random.sample(self.neighbours, self.multi)
+        return chosen
 
 
 
@@ -129,7 +131,9 @@ class EvaluatedMulticastFlowNode(MulticastFlowNode):
             return self.neighbours
 
         discrepancies = list((n, self.local_estimate - self.estimates[n]) for n in self.neighbours)
-        return sorted(discrepancies, key=lambda pair: pair[1], reverse=True)[:self.multi]
+        chosen = sorted(discrepancies, key=lambda pair: pair[1], reverse=True)[:self.multi]
+
+        return [i[0] for i in chosen]
 
 
 
@@ -185,8 +189,8 @@ class TimeoutFlowNode(FlowNode):
 
 class TimeoutMulticastFlowNode(MulticastFlowNode, TimeoutFlowNode):
     def __init__(self, id, neighbours, input, multi, timeout_value):
-        MulticastFlowNode.__init__(self, id, neighbours, input, multi)
-        TimeoutFlowNode.__init__(self, id, neighbours, input, timeout_value)
+        MulticastFlowNode.__init__(id, neighbours, input, multi)
+        TimeoutFlowNode.__init__(id, neighbours, input, timeout_value)
 
 
 class TimeoutEvaluatedMulticastFlowNode(EvaluatedMulticastFlowNode, TimeoutFlowNode):
