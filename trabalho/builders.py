@@ -11,6 +11,8 @@ import events
 class SimulatorBuilder:
     def __init__(self):
         self.simulator = simulator.Simulator()
+        self.simulator.is_timeout = False
+        self.simulator.base_node_type = "normal"
 
     #for adding members
     def build_with_simulator(self, simulator):
@@ -111,19 +113,19 @@ class SimulatorBuilder:
     def buildNode(self, id, input, neighbours):
 
         if self.simulator.base_node_type == 'normal':
-            if self.simulator.is_timeout:
+            if not self.simulator.is_timeout:
                 node = nodes.FlowNode(id, neighbours, input)
             else:
                 node = nodes.TimeoutFlowNode(id, neighbours, input, self.simulator.timeout_value)
 
         elif self.simulator.base_node_type == 'multicast':
-            if self.simulator.is_timeout:
+            if not self.simulator.is_timeout:
                 node = nodes.MulticastFlowNode(id, neighbours, input, self.multi)
             else:
                 node = nodes.TimeoutMulticastFlowNode(id, neighbours, input, self.multi, self.simulator.timeout_value)
 
         elif self.simulator.base_node_type == 'emulticast':
-            if self.simulator.is_timeout:
+            if not self.simulator.is_timeout:
                 node = nodes.EvaluatedMulticastFlowNode(id, neighbours, input, self.multi)
             else:
                 node = nodes.TimeoutEvaluatedMulticastFlowNode(id, neighbours, input, self.multi, self.simulator.timeout_value)
@@ -169,19 +171,18 @@ def main():
         
     sim_builder = SimulatorBuilder()
     #as an example, default is already 0
-    sim_builder.with_evaluated_multicast_protocol(2)
+    sim_builder.with_evaluated_multicast_protocol(1)
     sim_builder.with_loss_rate(0).with_agregation_type('average')
     #sim_builder.with_flowsums_termination()
     
     #nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)
     sim_builder.with_self_termination_by_min_dif(50, 0.01)
-    sim_builder.with_timeout_protocol(100)
+    #sim_builder.with_timeout_protocol(100)
     #inputs_by_node = dict.fromkeys(range(len(G)), 2)
     #sim_builder.with_scheduled_change_inputs_event(inputs_by_node, 5)
     #sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)
     
-    fanout = 1
     sim = sim_builder.build(G, inputs)
     t, c, r = sim.start()
     

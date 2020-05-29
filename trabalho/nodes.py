@@ -101,7 +101,9 @@ class MulticastFlowNode(FlowNode):
         sum_estimates = sum(self.estimates.values())
         self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
 
+
         self.chosen_neighbours = self._choose_neighbours()
+        
 
         for n in self.chosen_neighbours:
             self.flows[n] += self.local_estimate - self.estimates[n]
@@ -110,10 +112,14 @@ class MulticastFlowNode(FlowNode):
 
     def _choose_neighbours(self):
         # escolhido uniformemente
+
         if len(self.neighbours) <= self.multi:
+            print("todos", self.neighbours)
             return self.neighbours
 
-        return random.sample(self.neighbours, self.multi)
+        chosen = random.sample(self.neighbours, self.multi)
+        print("random", chosen)
+        return chosen
 
 
 
@@ -185,8 +191,8 @@ class TimeoutFlowNode(FlowNode):
 
 class TimeoutMulticastFlowNode(MulticastFlowNode, TimeoutFlowNode):
     def __init__(self, id, neighbours, input, multi, timeout_value):
-        MulticastFlowNode.__init__(self, id, neighbours, input, multi)
-        TimeoutFlowNode.__init__(self, id, neighbours, input, timeout_value)
+        MulticastFlowNode.__init__(id, neighbours, input, multi)
+        TimeoutFlowNode.__init__(id, neighbours, input, timeout_value)
 
 
 class TimeoutEvaluatedMulticastFlowNode(EvaluatedMulticastFlowNode, TimeoutFlowNode):
