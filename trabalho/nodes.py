@@ -31,8 +31,8 @@ class FlowNode:
         #print("removed: ", self.flows, " " , self.estimates)
 
     def handle_messages(self, msgs):
-
-        map(self._handle_message, msgs)
+        for m in msgs:
+            self._handle_message(m)
 
         return self.transition_and_gen_msgs()
         
@@ -101,9 +101,7 @@ class MulticastFlowNode(FlowNode):
         sum_estimates = sum(self.estimates.values())
         self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
 
-
         self.chosen_neighbours = self._choose_neighbours()
-        
 
         for n in self.chosen_neighbours:
             self.flows[n] += self.local_estimate - self.estimates[n]
@@ -114,11 +112,9 @@ class MulticastFlowNode(FlowNode):
         # escolhido uniformemente
 
         if len(self.neighbours) <= self.multi:
-            print("todos", self.neighbours)
             return self.neighbours
 
         chosen = random.sample(self.neighbours, self.multi)
-        print("random", chosen)
         return chosen
 
 
@@ -135,7 +131,9 @@ class EvaluatedMulticastFlowNode(MulticastFlowNode):
             return self.neighbours
 
         discrepancies = list((n, self.local_estimate - self.estimates[n]) for n in self.neighbours)
-        return sorted(discrepancies, key=lambda pair: pair[1], reverse=True)[:self.multi]
+        chosen = sorted(discrepancies, key=lambda pair: pair[1], reverse=True)[:self.multi]
+
+        return [i[0] for i in chosen]
 
 
 
