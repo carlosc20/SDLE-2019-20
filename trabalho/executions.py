@@ -38,7 +38,7 @@ def build_dict():
 def thread_execution(n_list):
     results = build_dict()
 
-    iter_size = 10
+    iter_size = 3
 
     for n in n_list:
         results['nodes'].append(n)
@@ -46,7 +46,7 @@ def thread_execution(n_list):
         max_r = max_m = -1
         med_r = med_m = 0
         for i in range(iter_size):
-            G = graphGen.randomG(n,3)
+            G = graphGen.randomG(n,3,10)
             inputs = [1] * len(G)
             #nx.draw(G, with_labels=True)
             #plt.show()
@@ -80,6 +80,7 @@ def thread_execution(n_list):
 
 def execution(n_min, n_max, step, n_threads):
     n_list = list(range(n_min, n_max, step))
+    print(len(n_list), n_threads)
     slice_size = math.ceil(len(n_list) / n_threads)
     results = []
     pool = ThreadPool(n_threads)
@@ -105,11 +106,14 @@ def execution(n_min, n_max, step, n_threads):
         final_results['max_rounds'] += r_dict['max_rounds']
         final_results['min_rounds'] += r_dict['min_rounds'] 
 
-    plt.plot(final_results['nodes'], final_results['med_messages'])
 
-    print(final_results)
+    return final_results
+
 
 
 
 if __name__ == '__main__': 
-    execution(1,1,10,2)
+    results = execution(10,20,5,2)
+    plt.plot(results['nodes'], results['med_messages'])
+    print(results)
+    plt.show()
