@@ -32,6 +32,8 @@ class Simulator:
         self.max_rounds = None
         self.min_dif = None
 
+        self.departure_arrival_set = {}
+
         self.graph_events = {}
 
         self.message_counter = 0
