@@ -121,6 +121,7 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
 #(l, 3, 3, builders, 10)
 def execution(n_min, n_max, step, n_threads, sim_builders, thread_args):
     n_list = list(range(n_min, n_max, step))
+    print(len(n_list), n_threads)
     slice_size = math.ceil(len(n_list) / n_threads)
     results = []
     pool = ThreadPool(n_threads)
