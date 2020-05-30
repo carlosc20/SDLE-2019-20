@@ -3,6 +3,7 @@ import random
 import nodes
 import builders
 
+
 def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None,):
     n_nodes = len(graph)
     new_nodes = {}
