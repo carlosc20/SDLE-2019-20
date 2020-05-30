@@ -74,6 +74,7 @@ class Simulator:
                     continue
 
                 inbox.setdefault(m.dst, []).append(m)
+            
                             
             # novas mensagens geradas               
             new = self._handle_group_msg(inbox, self.graph)
