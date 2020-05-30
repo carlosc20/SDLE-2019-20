@@ -7,6 +7,7 @@ import math
 import numpy as np
 import sys
 import builders
+import copy
 
 def builder_simple():
     sim_builder = builders.SimulatorBuilder()
@@ -31,7 +32,7 @@ def builde_super_dict(sim_builders):
 
 def build_dict():
     results = {}
-    results['nodes'] = [] 
+    results['step_axis'] = [] 
     results['med_messages'] = []
     results['med_rounds'] = []
     results['max_messages'] = []
@@ -42,13 +43,11 @@ def build_dict():
     return results
 
 
-def simulate_single(n, graph, inputs, sim_name, sim_builder, global_results, iter_size):
-    global_results[sim_name]['nodes'].append(n)
+def simulate_single_nodes_step(n, sim, sim_name, sim_builder, global_results, iter_size):
+    global_results[sim_name]['step_axis'].append(n)
     min_r = min_m = sys.maxsize
     max_r = max_m = -1
     med_r = med_m = 0
-
-    sim = sim_builder.build(graph, inputs)
 
     for i in range(iter_size):
 
@@ -81,11 +80,21 @@ def simulate_single(n, graph, inputs, sim_name, sim_builder, global_results, ite
 # Retorna [sim_dict] 
 # sim_dict = {}
 
-#def thread_execution_rmse_timestep(rmse_list, graph, sim_builders, iter_size):
- #   global_results = builde_super_dict(sim_builders)
+def thread_execution_rmse_step(rmse_list, graph, sim_builders, iter_size):
+    global_results = builde_super_dict(sim_builders)
+
+    inputs = [1] * len(G)
+
+    for r in rmse_list:
+        for sim_name, sim_builder in sim_builders.items():
+            aux_builder = copy.deepcopy(sim_builder)
+            sim = sim_builder.with_confidence_value(rmse_list).build(graph, inputs)
+            simulate_single_rmse_step(r, sim, )
 
 
-def thread_execution_nodes_timestep(n_list, degree, iter_size, sim_builders, sync_value = None):
+
+
+def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_value = None):
     global_results = builde_super_dict(sim_builders)
 
     for n in n_list:
@@ -95,9 +104,16 @@ def thread_execution_nodes_timestep(n_list, degree, iter_size, sim_builders, syn
             G = graphGen.randomG(n, degree, sync_value)
 
         # mudar aqui para fazer Contagem
-        inputs = [1] * len(G)
+        
         for sim_name, sim_builder in sim_builders.items():
-            simulate_single(n, G, inputs, sim_name, sim_builder, global_results, iter_size)
+            aux_builder = copy.deepcopy(sim_builder)
+            if aux_builder.simulator.aggregation_type == 'average':
+                inputs = [1] * len(G)
+            else:
+                inputs = [0] * len(G - 1) + [1]
+
+            sim = sim_builder.build(G, inputs)
+            simulate_single_nodes_step(n, sim, sim_name, sim_builder, global_results, iter_size)
 
     return global_results
 
@@ -112,7 +128,7 @@ def execution(n_min, n_max, step, n_threads, sim_builders, thread_args):
     for i in range(0, len(n_list), slice_size):
         l = n_list[i : i  + slice_size]
         print(l)
-        results.append( pool.apply_async(thread_execution_nodes_timestep, args=  ((l,) + thread_args)))
+        results.append( pool.apply_async(thread_execution_nodes_step, args=  ((l,) + thread_args)))
 
     pool.close()
     pool.join()
@@ -124,7 +140,7 @@ def execution(n_min, n_max, step, n_threads, sim_builders, thread_args):
     for r in results:
         r_dict = r.get()
         for sim in r_dict:
-            final_results[sim]['nodes'] += r_dict[sim]['nodes']  
+            final_results[sim]['step_axis'] += r_dict[sim]['step_axis']  
             final_results[sim]['med_messages'] += r_dict[sim]['med_messages']
             final_results[sim]['med_rounds'] += r_dict[sim]['med_rounds']
             final_results[sim]['max_messages'] += r_dict[sim]['max_messages']
@@ -139,9 +155,9 @@ def execution(n_min, n_max, step, n_threads, sim_builders, thread_args):
 
 
 if __name__ == '__main__': 
-    b1 = executions.builder_simple()
-    b2 = executions.builder_simple()
-    b3 = executions.builder_simple()
+    b1 = builder_simple()
+    b2 = builder_simple()
+    b3 = builder_simple()
     
     builders = {'simples1' : b1, 'simples2' : b2, 'simples3' : b3}
     
@@ -149,6 +165,6 @@ if __name__ == '__main__':
     thread_args = (3, 1, builders, 10)
     
     #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = executions.execution(5, 10, 2, 1, builders, thread_args)
+    final_results = execution(5, 10, 2, 1, builders, thread_args)
     
     print(final_results)
