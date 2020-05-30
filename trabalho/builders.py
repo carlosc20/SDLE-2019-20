@@ -171,14 +171,14 @@ def main():
         
     sim_builder = SimulatorBuilder()
     #as an example, default is already 0
-    sim_builder.with_evaluated_multicast_protocol(1)
+    sim_builder.with_multicast_protocol(1)
     sim_builder.with_loss_rate(0).with_agregation_type('average')
     #sim_builder.with_flowsums_termination()
     
     #nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)
     sim_builder.with_self_termination_by_min_dif(50, 0.01)
-    #sim_builder.with_timeout_protocol(100)
+    sim_builder.with_timeout_protocol(100)
     #inputs_by_node = dict.fromkeys(range(len(G)), 2)
     #sim_builder.with_scheduled_change_inputs_event(inputs_by_node, 5)
     #sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)

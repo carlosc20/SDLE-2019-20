@@ -189,8 +189,9 @@ class TimeoutFlowNode(FlowNode):
 
 class TimeoutMulticastFlowNode(MulticastFlowNode, TimeoutFlowNode):
     def __init__(self, id, neighbours, input, multi, timeout_value):
-        MulticastFlowNode.__init__(id, neighbours, input, multi)
-        TimeoutFlowNode.__init__(id, neighbours, input, timeout_value)
+        MulticastFlowNode.__init__(self, id, neighbours, input, multi)
+        TimeoutFlowNode.__init__(self, id, neighbours, input, timeout_value)
+
 
 
 class TimeoutEvaluatedMulticastFlowNode(EvaluatedMulticastFlowNode, TimeoutFlowNode):
