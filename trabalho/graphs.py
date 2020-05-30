@@ -3,8 +3,31 @@ from executions import execution
 import matplotlib.pyplot as plt
 
 
-
+class Interval:
+    def __init__(self, med, min, max, med_label, int_label):
+        self.med = med
+        self.min = min
+        self.max = max
+        self.med_label = med_label
+        self.int_label = int_label
     
+
+def graph_multi(x, title, x_label, y_label, *args):
+
+    fig, ax = plt.subplots()
+
+    for arg in args:  
+        ax.plot(x, arg.med, '-', label=arg.med_label)
+        ax.fill_between(x, arg.min, arg.max, alpha=0.2, label=arg.int_label)
+
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+
+    ax.legend()
+    plt.show()
+
+
 def graph_vs(x, med1, min1, max1, med_label1, int_label1, med2, min2, max2, med_label2, int_label2, title, x_label, y_label):
 
     fig, ax = plt.subplots()
@@ -23,141 +46,155 @@ def graph_vs(x, med1, min1, max1, med_label1, int_label1, med2, min2, max2, med_
     plt.show()
 
 
+# rondas e mensagens por nodos, operaçao average e count
+# dois sims average e count
+def average_vs_count(r):
+    nodes = r["average"]["nodes"]
 
-def average_vs_count(results):
-    nodes = results['nodes']
+    one = r["average"]
+    two = r["count"]
 
-    med_msg = results['med_messages']
-    max_msg = results['max_messages']
-    min_msg = results['min_messages']
-
-    med_rnd = results['med_rounds']
-    max_rnd = results['max_rounds']
-    min_rnd = results['min_rounds']
+    graph_vs(
+        nodes,
+        one["med_messages"], one["min_messages"], one["max_messages"], 'Average (AVERAGE)', 'Interval (AVERAGE)', 
+        two["med_messages"], two["min_messages"], two["max_messages"], 'Average (COUNT)', 'Interval (COUNT)', 
+        "Messages comparison AVERAGE vs COUNT", 
+        "Nodes", "Messages")
 
     graph_vs(
         nodes, 
-        med_msg, min_msg, max_msg, 'Média AVERAGE', 'Itervalo possível AVERAGE', 
-        med_rnd, min_rnd, max_rnd, 'Média COUNT', 'Intervalo possível COUNT', 
-        "Comparação mensagens AVERAGE e COUNT", 
-        "Nodos", "Mensagens")
+        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Average (AVERAGE)', 'Interval (AVERAGE)', 
+        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Average (COUNT)', 'Interval (COUNT)', 
+        "Rounds comparison AVERAGE vs COUNT", 
+        "Nodes", "Rounds")
+
+
+# rondas e mensagens por nodos, rmse vs flowsum termination
+# dois sims rmse e flowsum, com COUNT
+def rmse_vs_flowsum(r):
+    nodes = r["rmse"]["nodes"]
+
+    one = r["rmse"]
+    two = r["floswum"]
+
+    graph_vs(
+        nodes,
+        one["med_messages"], one["min_messages"], one["max_messages"], 'Average (RMSE)', 'Interval (RMSE)', 
+        two["med_messages"], two["min_messages"], two["max_messages"], 'Average (FLOWSUM)', 'Interval (FLOWSUM)', 
+        "Messages comparison RMSE vs FLOWSUM termination", 
+        "Nodes", "Messages")
 
     graph_vs(
         nodes, 
-        med_msg, min_msg, max_msg, 'Média AVERAGE', 'Itervalo possível AVERAGE', 
-        med_rnd, min_rnd, max_rnd, 'Média COUNT', 'Intervalo possível COUNT', 
-        "Comparação rondas AVERAGE e COUNT", 
-        "Nodos", "Rondas")
+        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Average (RMSE)', 'Interval (RMSE)', 
+        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Average (FLOWSUM)', 'Interval (FLOWSUM)', 
+        "Rounds comparison RMSE vs FLOWSUM termination", 
+        "Nodes", "Rounds")
 
 
-def rmse_vs_flowsum(results):
-    # vs push sum?
-    nodes = results['nodes']
+# rondas por rmse, para varias loss rates, graficos para broadcast uni e euni
+# TODO, mudar nomes para uni e euni, se calhar tirar 0.6 loss rate?
+def rounds_rmse_loss(r, rmse):
 
-    med_msg = results['med_messages']
-    max_msg = results['max_messages']
-    min_msg = results['min_messages']
+    # normal/broadcast
+    graph_multi(
+        rmse, "Broadcast", "RMSE", "Rounds",
+        Interval(r["0"]["med_rounds"],r["0"]["min_rounds"],r["0"]["max_rounds"],"No loss","No loss"),
+        Interval(r["02"]["med_rounds"],r["02"]["min_rounds"],r["02"]["max_rounds"],"20% message loss","20% message loss"),
+        Interval(r["04"]["med_rounds"],r["04"]["min_rounds"],r["04"]["max_rounds"],"40% message loss","40% message loss"),
+        Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
+        )
 
-    med_rnd = results['med_rounds']
-    max_rnd = results['max_rounds']
-    min_rnd = results['min_rounds']
+    # uni
+    graph_multi(
+        rmse, "Unicast", "RMSE", "Rounds",
+        Interval(r["0"]["med_rounds"],r["0"]["min_rounds"],r["0"]["max_rounds"],"No loss","No loss"),
+        Interval(r["02"]["med_rounds"],r["02"]["min_rounds"],r["02"]["max_rounds"],"20% message loss","20% message loss"),
+        Interval(r["04"]["med_rounds"],r["04"]["min_rounds"],r["04"]["max_rounds"],"40% message loss","40% message loss"),
+        Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
+        )
 
-    graph_vs(
-        nodes, 
-        med_msg, min_msg, max_msg, 'Média RMSE', 'Itervalo possível RMSE', 
-        med_rnd, min_rnd, max_rnd, 'Média FLOWSUM', 'Intervalo possível FLOWSUM', 
-        "Comparação mensagens RMSE e FLOWSUM", 
-        "Nodos", "Mensagens")
-
-    graph_vs(
-        nodes, 
-        med_msg, min_msg, max_msg, 'Média RMSE', 'Itervalo possível RMSE', 
-        med_rnd, min_rnd, max_rnd, 'Média FLOWSUM', 'Intervalo possível FLOWSUM', 
-        "Comparação rondas RMSE e FLOWSUM", 
-        "Nodos", "Rondas")
-
-
-def casts_by_rmse(results):
-    rmse
-
-    # broadcast vs unicast vs eunicast
-
-    graph_vs(
-        rmse, 
-        med_msg, min_msg, max_msg, 'Média RMSE', 'Itervalo possível RMSE', 
-        med_rnd, min_rnd, max_rnd, 'Média FLOWSUM', 'Intervalo possível FLOWSUM', 
-        "Comparação mensagens RMSE e FLOWSUM", 
-        "Nodos", "Mensagens")
-
-    graph_vs(
-        rmse, 
-        med_msg, min_msg, max_msg, 'Média RMSE', 'Itervalo possível RMSE', 
-        med_rnd, min_rnd, max_rnd, 'Média FLOWSUM', 'Intervalo possível FLOWSUM', 
-        "Comparação rondas RMSE e FLOWSUM", 
-        "Nodos", "Rondas")
+    # evaluated uni
+    graph_multi(
+        rmse, "Evaluated Unicast", "RMSE", "Rounds",
+        Interval(r["0"]["med_rounds"],r["0"]["min_rounds"],r["0"]["max_rounds"],"No loss","No loss"),
+        Interval(r["02"]["med_rounds"],r["02"]["min_rounds"],r["02"]["max_rounds"],"20% message loss","20% message loss"),
+        Interval(r["04"]["med_rounds"],r["04"]["min_rounds"],r["04"]["max_rounds"],"40% message loss","40% message loss"),
+        Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
+        )
 
 
+# rondas por rmse com entradas e saídas de nodos (nº variado)
+def rounds_rmse_dynamic(r, rmse):
 
-def rounds_rmse_loss(results):
-    # media rondas por rmse 
-    # broad uni e euni, um graph para cada com as losses todas
-    # 0, 0.2, 0.4 0.6 loss rate 
-    pass
+    fig, ax = plt.subplots()
+
+    ax.plot(rmse, r["med_rounds"], '-')
+    ax.fill_between(rmse, r["min_rounds"], r["max_rounds"], alpha=0.2)
+
+    ax.set_title("Dynamic network")
+    ax.set_xlabel("RMSE")
+    ax.set_ylabel("Rounds")
+
+    plt.show()
 
 
-def rounds_rmse_dynamic(results):
-    # - med -> nº de rondas / RMSE (entradas e saídas de nodos (nº variado))
-    pass
+# rondas por rmse com input variável
+# TODO arranjar um melhor?
+def rounds_rmse_varying_inputs(r, rmse):
 
+    fig, ax = plt.subplots()
 
-def rounds_rmse_varying_inputs(results):
-    # - med -> nº de rondas / RMSE (mudança de input)
-    pass
+    ax.plot(rmse, r["med_rounds"], '-')
+    ax.fill_between(rmse, r["min_rounds"], r["max_rounds"], alpha=0.2)
+
+    ax.set_title("Regular input change")
+    ax.set_xlabel("RMSE")
+    ax.set_ylabel("Rounds")
+
+    plt.show()
 
 
 
-def min_dif_average(results):
+# media de rondas que estimativa fica no intervalo mindif, por nr de nodos
+# TODO por nos resultados isto, substituir os ??, por legendas direito
+def min_dif_average(r):
     
     fig, ax = plt.subplots()
 
-    ax.plot(x, med1, '-', label=med_label1)
-    ax.fill_between(x, min1, max1, alpha=0.2, label=int_label1)
+    ax.plot(r["nodes"], r["??"], '-')
+    ax.fill_between(r["nodes"], r["min_??"], r["max_??"], alpha=0.2)
 
     ax.set_title("Mindif por nodos com RMSE global")
     ax.set_xlabel("Nodos")
     ax.set_ylabel("Média rondas em que estimativa permanece dentro do intervalo mindif")
 
-    ax.legend()
     plt.show()
 
 
 
+# rondas e mensagens por nodos, com sync e async, com certo timeout
+# dois sims sync e async, com COUNT
+def sync_vs_async(r):
 
-def sync_vs_async(self, parameter_list):
+    nodes = r["sync"]["nodes"]
 
-    nodes = results['nodes']
+    one = r["sync"]
+    two = r["async"]
 
-    med_msg = results['med_messages']
-    max_msg = results['max_messages']
-    min_msg = results['min_messages']
-
-    med_rnd = results['med_rounds']
-    max_rnd = results['max_rounds']
-    min_rnd = results['min_rounds']
+    graph_vs(
+        nodes,
+        one["med_messages"], one["min_messages"], one["max_messages"], 'Average (sync)', 'Interval (sync)', 
+        two["med_messages"], two["min_messages"], two["max_messages"], 'Average (async)', 'Interval (async)', 
+        "Messages comparison sync vs async", 
+        "Nodes", "Messages")
 
     graph_vs(
         nodes, 
-        med_msg, min_msg, max_msg, 'Média sinc.', 'Itervalo possível sinc.', 
-        med_rnd, min_rnd, max_rnd, 'Média assinc.', 'Intervalo possível assinc.', 
-        "Comparação mensagens sinc. e assinc.", 
-        "Nodos", "Mensagens")
-
-    graph_vs(
-        nodes, 
-        med_msg, min_msg, max_msg, 'Média sinc.', 'Itervalo possível sinc.', 
-        med_rnd, min_rnd, max_rnd, 'Média assinc.', 'Intervalo possível assinc.', 
-        "Comparação rondas sinc. e assinc.", 
-        "Nodos", "Rondas")
+        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Average (sync)', 'Interval (sync)', 
+        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Average (async)', 'Interval (async)', 
+        "Rounds comparison sync vs COUNT", 
+        "Nodes", "Rounds")
 
 
 
