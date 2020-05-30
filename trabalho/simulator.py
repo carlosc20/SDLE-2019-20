@@ -83,13 +83,20 @@ class Simulator:
 
             if self.base_node_type == 'timeout':
                 new += self._handle_timeouts(timeouts, self.graph)
+                print("oioioioio")
 
             terminated = False
 
             if self.t_type is 'flowsums':
                 terminated = self._check_termination_flowsums(self.graph, self.input_sum, self.confidence_value)
-            elif self.t_type is 'rmse':           
-                terminated = self._check_termination_rmse(self.graph, self.target_value, self.confidence_value)
+            elif self.t_type is 'rmse':   
+                if self.aggregation_type is 'average':            
+                    terminated = self._check_termination_rmse_average(self.graph, self.target_value, self.confidence_value)
+                elif self.aggregation_type is 'count':
+                    terminated = self._check_termination_rmse_count(self.graph, self.target_value, self.confidence_value)
+                else:
+                    print("unavailable")
+                    #TODO        
 
             if terminated:
                 new = []
@@ -102,6 +109,10 @@ class Simulator:
             self._message_count(new)
 
             self._handle_events()
+
+        for n in self.graph:
+            node = self.graph.nodes[n]['flownode']
+            print("node: ", n, " est: ", node.local_estimate)
 
         return self.current_time, self.message_counter, self.n_rounds
     
@@ -207,7 +218,7 @@ class Simulator:
 
 
     # uses RMSE as limit to termination
-    def _check_termination_rmse(self, graph, target_value, target_rmse):
+    def _check_termination_rmse_average(self, graph, target_value, target_rmse):
             
         square_error_sum = 0
 
@@ -216,6 +227,25 @@ class Simulator:
             square_error_sum += (node.local_estimate - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph))
         #print('rmse: ', rmse)
+
+        return rmse < target_rmse
+
+
+    # uses RMSE as limit to termination
+    def _check_termination_rmse_count(self, graph, target_value, target_rmse):
+            
+        square_error_sum = 0
+
+        for n in graph.nodes:
+            node = graph.nodes[n]['flownode']
+            le = node.local_estimate 
+            if le == 0:
+                le = 1  
+            square_error_sum += (le - target_value) ** 2
+        rmse = math.sqrt(square_error_sum / len(graph)) 
+        #print('rmse: ', rmse)
+
+        print(rmse)
 
         return rmse < target_rmse
 
@@ -246,7 +276,13 @@ class Simulator:
         self.input_sum += add_e.input * add_e.numberToAdd
 
         #assume average
-        self.target_value = self.input_sum / len(self.graph)
+        if self.simulator.aggregation_type == 'average':            
+            self.simulator.target_value = inputs_sum / len(graph)
+        elif self.simulator.aggregation_type == 'count':
+            self.simulator.target_value = len(graph)
+        else:
+            print("unavailable")
+            #TODO
         nx.draw(self.graph, with_labels=True)
         plt.show()
 

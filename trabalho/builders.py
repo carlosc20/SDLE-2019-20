@@ -154,6 +154,8 @@ class SimulatorBuilder:
         self.simulator.input_sum = inputs_sum
         if self.simulator.aggregation_type == 'average':            
             self.simulator.target_value = inputs_sum / len(graph)
+        elif self.simulator.aggregation_type == 'count':
+            self.simulator.target_value = 1 / len(graph)
         else:
             print("unavailable")
             #TODO

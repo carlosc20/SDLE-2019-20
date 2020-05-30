@@ -11,8 +11,7 @@ import copy
 
 def builder_simple():
     sim_builder = builders.SimulatorBuilder()
-    sim_builder.with_loss_rate(0).with_agregation_type('average')
-    sim_builder.with_flowsums_termination()
+    sim_builder.with_agregation_type('count')
     # nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)
     #sim_builder.with_self_termination_by_min_dif(50, 0.01)
@@ -43,7 +42,7 @@ def build_dict():
     return results
 
 
-def simulate_single_nodes_step(n, sim, sim_name, sim_builder, global_results, iter_size):
+def simulate_single_nodes_step(n, graph, inputs, sim_name, sim_builder, global_results, iter_size):
     global_results[sim_name]['step_axis'].append(n)
     min_r = min_m = sys.maxsize
     max_r = max_m = -1
@@ -51,7 +50,9 @@ def simulate_single_nodes_step(n, sim, sim_name, sim_builder, global_results, it
 
     for i in range(iter_size):
 
-        t, m, r = sim.start()
+        builder = copy.deepcopy(sim_builder)
+        
+        t, m, r = builder.build(graph, inputs).start()
 
         if m < min_m:
             min_m = m
@@ -88,7 +89,7 @@ def thread_execution_rmse_step(rmse_list, graph, sim_builders, iter_size):
     for r in rmse_list:
         for sim_name, sim_builder in sim_builders.items():
             aux_builder = copy.deepcopy(sim_builder)
-            sim = sim_builder.with_confidence_value(rmse_list).build(graph, inputs)
+            sim = sim_builder.with_confidence_value(rmse_list)
             simulate_single_rmse_step(r, sim, )
 
 
@@ -110,10 +111,9 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
             if aux_builder.simulator.aggregation_type == 'average':
                 inputs = [1] * len(G)
             else:
-                inputs = [0] * len(G - 1) + [1]
+                inputs = [0] * (len(G) - 1) + [1]
 
-            sim = sim_builder.build(G, inputs)
-            simulate_single_nodes_step(n, sim, sim_name, sim_builder, global_results, iter_size)
+            simulate_single_nodes_step(n, G, inputs, sim_name, aux_builder, global_results, iter_size)
 
     return global_results
 

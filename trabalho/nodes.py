@@ -64,6 +64,8 @@ class FlowNode:
         sum_flows = sum(self.flows.values())
         sum_estimates = sum(self.estimates.values())
         self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
+
+        print(self.local_estimate)
         
         for n in self.neighbours:
             self.flows[n] += self.local_estimate - self.estimates[n]
