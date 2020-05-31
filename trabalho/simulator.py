@@ -110,6 +110,12 @@ class Simulator:
 
             self._handle_events()
 
+            n_e, rounds_self_term = self.get_stats()
+
+        return self.current_time, self.message_counter, self.n_rounds, n_e, rounds_self_term
+    
+    
+    def get_stats(self):
         n_e = []
         rounds_self_term = [0] * len(self.graph)
         for n in self.graph:
@@ -119,9 +125,8 @@ class Simulator:
             if self.termination_type is 'self' or self.test_type is 'self_testing':
                 rounds_self_term[n] = node.getConsecutiveRounds()
 
+        return n_e, rounds_self_term
 
-        return self.current_time, self.message_counter, self.n_rounds, n_e, rounds_self_term
-    
 
     def _message_count(self, events):
         for e in events:
