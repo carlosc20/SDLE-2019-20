@@ -243,7 +243,7 @@ class Simulator:
             node = graph.nodes[n]['flownode']
             square_error_sum += (node.local_estimate - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph))
-        print('rmse: ', rmse)
+        #print('rmse: ', rmse)
 
         return rmse < target_rmse
 

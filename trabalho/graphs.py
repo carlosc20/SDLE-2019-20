@@ -359,11 +359,11 @@ def min_dif_average_exec():
     b = builders.SimulatorBuilder().with_agregation_type('average').with_min_dif_testing(0.01)
     bs = {'builder' : b}
 
-    thread_args = (3, 5, bs)
+    thread_args = (3, 5, bs, 1)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(6, 20, 2, 2, bs, thread_args)
+    final_results = node_step_execution(6, 30, 2, 2, bs, thread_args)
     #print(final_results)
     min_dif_average(final_results['builder'])
 
