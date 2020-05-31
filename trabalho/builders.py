@@ -37,26 +37,34 @@ class SimulatorBuilder:
 
 
     def with_flowsums_termination(self):
-        self.simulator.t_type = "flowsums"      
+        self.simulator.termination_type = "flowsums"      
         return self
 
 
     def with_rmse_termination(self):
-        self.simulator.t_type = "rmse"   
+        self.simulator.termination_type = "rmse"   
         return self
     
 
     def with_self_termination_by_rounds(self, max_rounds):
-        self.simulator.t_type = "self"
+        self.simulator.termination_type = "self"
         self.simulator.node_termination_component = "max_rounds"
         self.simulator.max_rounds = max_rounds
         return self
 
 
     def with_self_termination_by_min_dif(self, max_rounds, min_dif):
-        self.simulator.t_type = "self"
+        self.simulator.termination_type = "self"
         self.simulator.node_termination_component = "min_dif"
         self.simulator.max_rounds = max_rounds
+        self.simulator.min_dif = min_dif
+        return self
+
+    
+    def with_min_dif_testing(self, min_dif):
+        self.simulator.test_type = "self_testing"
+        self.simulator.node_termination_component = "min_dif"
+        self.simulator.max_rounds = 10000000
         self.simulator.min_dif = min_dif
         return self
         
@@ -139,7 +147,10 @@ class SimulatorBuilder:
             component = nodes.SelfTerminateRoundsComponent(node, self.simulator.max_rounds)
 
         elif self.simulator.node_termination_component == 'min_dif':
-            component = nodes.SelfTerminateDifComponent(node, self.simulator.max_rounds, self.simulator.min_dif)
+            for_testing = False
+            if self.simulator.termination_type == 'self_testing':
+                for_testing = True
+            component = nodes.SelfTerminateDifComponent(node, self.simulator.max_rounds, self.simulator.min_dif, for_testing)
         
         else:
             component = None
@@ -155,7 +166,7 @@ class SimulatorBuilder:
         if self.simulator.aggregation_type == 'average':            
             self.simulator.target_value = inputs_sum / len(graph)
         elif self.simulator.aggregation_type == 'count':
-            self.simulator.target_value = 1 / len(graph)
+            self.simulator.target_value = len(graph)
         else:
             print("unavailable")
             #TODO

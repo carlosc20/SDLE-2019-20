@@ -23,7 +23,8 @@ class Simulator:
 
         self.aggregation_type = "average"
         self.confidence_value = 0.01
-        self.t_type = "rmse"
+        self.termination_type = "rmse"
+        self.test_type = "none" 
 
         self.base_node_type = "normal"
         self.timeout_value = None
@@ -83,13 +84,12 @@ class Simulator:
 
             if self.base_node_type == 'timeout':
                 new += self._handle_timeouts(timeouts, self.graph)
-                print("oioioioio")
 
             terminated = False
 
-            if self.t_type is 'flowsums':
+            if self.termination_type is 'flowsums':
                 terminated = self._check_termination_flowsums(self.graph, self.input_sum, self.confidence_value)
-            elif self.t_type is 'rmse':   
+            elif self.termination_type is 'rmse':   
                 if self.aggregation_type is 'average':            
                     terminated = self._check_termination_rmse_average(self.graph, self.target_value, self.confidence_value)
                 elif self.aggregation_type is 'count':
@@ -110,11 +110,17 @@ class Simulator:
 
             self._handle_events()
 
+        n_e = []
+        rounds_self_term = [0] * len(self.graph)
         for n in self.graph:
             node = self.graph.nodes[n]['flownode']
-            print("node: ", n, " est: ", node.local_estimate)
+            m = 1 / node.local_estimate if (self.aggregation_type is 'count' and node.local_estimate != 0) else node.local_estimate
+            n_e.append(m)
+            if self.termination_type is 'self' or self.test_type is 'self_testing':
+                rounds_self_term[n] = node.getConsecutiveRounds()
 
-        return self.current_time, self.message_counter, self.n_rounds
+
+        return self.current_time, self.message_counter, self.n_rounds, n_e, rounds_self_term
     
 
     def _message_count(self, events):
@@ -238,15 +244,10 @@ class Simulator:
 
         for n in graph.nodes:
             node = graph.nodes[n]['flownode']
-            le = node.local_estimate 
-            if le == 0:
-                le = 1  
+            le = 1 / node.local_estimate if node.local_estimate != 0 else 0
             square_error_sum += (le - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph)) 
-        #print('rmse: ', rmse)
-
-        print(rmse)
-
+        print('rmse: ', rmse)
         return rmse < target_rmse
 
 

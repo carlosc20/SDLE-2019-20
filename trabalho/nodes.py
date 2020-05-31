@@ -64,8 +64,6 @@ class FlowNode:
         sum_flows = sum(self.flows.values())
         sum_estimates = sum(self.estimates.values())
         self.local_estimate = (self.input - sum_flows + sum_estimates ) / (self.degree + 1)
-
-        print(self.local_estimate)
         
         for n in self.neighbours:
             self.flows[n] += self.local_estimate - self.estimates[n]
@@ -84,7 +82,8 @@ class FlowNode:
 
         return msgs
 
-
+    def getConsecutiveRounds(self):
+        return self.termination_component.rounds
 
 class MulticastFlowNode(FlowNode):
     def __init__(self, id, neighbours, input, multi):
@@ -132,7 +131,8 @@ class EvaluatedMulticastFlowNode(MulticastFlowNode):
         if len(self.neighbours) <= self.multi:
             return self.neighbours
 
-        discrepancies = list((n, self.local_estimate - self.estimates[n]) for n in self.neighbours)
+        discrepancies = list((n, abs(self.local_estimate - self.estimates[n])) for n in self.neighbours)
+        print(discrepancies)
         chosen = sorted(discrepancies, key=lambda pair: pair[1], reverse=True)[:self.multi]
 
         return [i[0] for i in chosen]
@@ -229,13 +229,14 @@ class SelfTerminateRoundsComponent:
 
 
 class SelfTerminateDifComponent:
-    def __init__(self, node, max_rounds, min_dif):
+    def __init__(self, node, max_rounds, min_dif, for_testing):
         self.node = node
         self.max_rounds = max_rounds
         self.rounds = 0
         self.min_dif = min_dif
         self.prev_estimate = None
         self.working = True
+        self.for_testing = for_testing
 
 
     def prepare_check(self):
@@ -244,19 +245,23 @@ class SelfTerminateDifComponent:
 
     def check_termination(self):
         if(self.working):
-            dif = abs((self.node.local_estimate - self.prev_estimate)) / self.node.local_estimate
+            if self.node.local_estimate != 0:
+                dif = abs((self.node.local_estimate - self.prev_estimate)) / self.node.local_estimate
+            else:
+                dif = 0
             #print("check_termination: dif: ", dif, " rounds:", self.rounds)
             if(dif <= self.min_dif):
                 self.rounds += 1
                 if self.rounds == self.max_rounds:
-                    self.working = False
-                    return True
+                    if not self.for_testing:
+                        self.working = False
+                        return True
             else:
                 self.rounds = 0
                 return False
         else:
             return True
-
+        return False
 
 
 

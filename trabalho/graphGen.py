@@ -73,17 +73,18 @@ def removeNodes(graph, numToRemove):
 
 def randomG(size=10, max_degree=3, w=None):
     built = False
-    while(not built):
+    i = 0
+    max_iter = 50
+    while(not built and i < max_iter):
         G = nx.Graph()
         G.add_nodes_from(range(size))
         nodes_degree = dict.fromkeys(range(size), 0)
-        i=0
         while not nx.is_connected(G):
             a = random.choice(list(nodes_degree.keys()))
             neighbour_found = False
             if nodes_degree[a] < max_degree:
                 i = 0
-                while(not neighbour_found and i < 50):
+                while(not neighbour_found and i < max_iter):
                     b = random.choice(list(nodes_degree.keys()))
                     if not G.has_edge(a, b) and a != b and nodes_degree[b] < max_degree:
                         if w == None:
@@ -100,11 +101,12 @@ def randomG(size=10, max_degree=3, w=None):
                         if nodes_degree[b] == max_degree:
                             del nodes_degree[b]
                         neighbour_found = True
-                if i == 50:
-                    break
-                else:
+                if i != max_iter:
                     built = True
-    return G
+    if i < max_iter:
+        return G
+    else:
+        return randomG(size, max_degree, w)
 
 
 def preferentialG(size=10, w=None):

@@ -49,7 +49,7 @@ def graph_vs(x, med1, min1, max1, med_label1, int_label1, med2, min2, max2, med_
 # rondas e mensagens por nodos, operaçao average e count
 # dois sims average e count
 def average_vs_count(r):
-    nodes = r["average"]["nodes"]
+    nodes = r["average"]["step_axis"]
 
     one = r["average"]
     two = r["count"]
@@ -72,7 +72,7 @@ def average_vs_count(r):
 # rondas e mensagens por nodos, rmse vs flowsum termination
 # dois sims rmse e flowsum, com COUNT
 def rmse_vs_flowsum(r):
-    nodes = r["rmse"]["nodes"]
+    nodes = r["rmse"]["step_axis"]
 
     one = r["rmse"]
     two = r["floswum"]
@@ -162,8 +162,8 @@ def min_dif_average(r):
     
     fig, ax = plt.subplots()
 
-    ax.plot(r["nodes"], r["??"], '-')
-    ax.fill_between(r["nodes"], r["min_??"], r["max_??"], alpha=0.2)
+    ax.plot(r["step_axis"], r["??"], '-')
+    ax.fill_between(r["step_axis"], r["min_??"], r["max_??"], alpha=0.2)
 
     ax.set_title("Mindif por nodos com RMSE global")
     ax.set_xlabel("Nodos")
