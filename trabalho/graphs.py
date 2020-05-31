@@ -355,9 +355,9 @@ def rounds_rmse_dynamic_exec():
 
     rounds_rmse_dynamic(final_results['builder'], rmses)
 
-
+#TODO
 def rounds_rmse_varying_inputs_exec():
-    # TODO preencher
+
     b = builders.SimulatorBuilder().with_agregation_type('count').with_scheduled_change_inputs_event(self, input_by_node, n_rounds)
     bs = {'builder' : b}
 
@@ -431,15 +431,50 @@ def async_vs_async_no_timeout_exec():
     async_vs_asynct(final_results1['async'], final_results2['asynct'])
 
 
+
+def converge():
+
+    iters = 1
+    max_degree = 3
+
+    inputs = {}
+    for i in range(10):
+        inputs[i] = 1.5
+
+
+    b = builders.SimulatorBuilder().with_agregation_type('average').with_scheduled_change_inputs_event(inputs,700)
+    
+    builder = {'builder' : b}
+    
+    thread_args = (max_degree, iters, builder)
+
+    print("start execution")
+    final_results = node_step_execution(10, 15, 5, 2, builder, thread_args)
+    estimates = final_results['builder']['nodes_estimates'][0]
+    estimates = list(map(list, zip(*estimates)))
+
+    fig, ax = plt.subplots()
+    for e in estimates:
+        ax.scatter(range(len(e)), e, color="red", s=1)
+
+    ax.set_title("Estimates over time")
+    ax.set_xlabel("Rounds")
+    ax.set_ylabel("Estimates")
+
+    plt.show()
+
+
+
 if __name__ == '__main__': 
     #average_vs_count_exec()
     #rounds_rmse_dynamic_exec()
-    rounds_rmse_loss_exec()
+    #rounds_rmse_loss_exec()
     #casts_comparison_exec()
     #min_dif_average_exec()
     #sync_vs_async_exec()
     #async_vs_async_no_timeout_exec()
 
+    converge()
     
 
 
