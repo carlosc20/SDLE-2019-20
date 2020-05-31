@@ -45,7 +45,7 @@ class SingleSimulation:
         self.med_r += r
         self.med_m += m
 
-    def get_results(self, step, iter_size, sim_name, global_results, n_length):
+    def get_results(self, step, iter_size, sim_name, global_results):
         global_results[sim_name]['step_axis'].append(step)
         global_results[sim_name]['med_messages'].append(self.med_m / iter_size)
         global_results[sim_name]['med_rounds'].append(self.med_r / iter_size)
@@ -54,7 +54,7 @@ class SingleSimulation:
         global_results[sim_name]['max_rounds'].append(self.max_r)
         global_results[sim_name]['min_rounds'].append(self.min_r)
         global_results[sim_name]['nodes_estimates'].append(self.med_n_e)
-        global_results[sim_name]['nodes_consecutive_rounds'].append(sum(self.med_c_r) / n_length)
+        global_results[sim_name]['nodes_consecutive_rounds'].append(sum(self.med_c_r) / iter_size)
 
 
 
@@ -192,7 +192,7 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
 
                 single_simulation[sim_name].simulate_single(G, inputs, sim_builder)
         for sim_name in sim_builders:
-            single_simulation[sim_name].get_results(n, iter_size, sim_name, global_results, n)
+            single_simulation[sim_name].get_results(n, iter_size, sim_name, global_results)
 
     return global_results
 
