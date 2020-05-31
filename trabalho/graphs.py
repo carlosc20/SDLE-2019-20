@@ -96,7 +96,7 @@ def rmse_vs_flowsum(r):
 
 def multicasts(r):
     graph_multi(
-        r["normal"]["step_axis"], "Comparison", "Nodes", "Rounds",
+        r["normal"]["step_axis"], "Broadcast vs Unicast comparison", "Nodes", "Rounds",
         Interval(r["normal"]["med_rounds"],r["normal"]["min_rounds"],r["normal"]["max_rounds"],"Broadcast"),
         Interval(r["uni"]["med_rounds"],r["uni"]["min_rounds"],r["uni"]["max_rounds"],"Unicast"),
         Interval(r["euni"]["med_rounds"],r["euni"]["min_rounds"],r["euni"]["max_rounds"],"Evaluated Unicast")
@@ -157,9 +157,9 @@ def min_dif_average(r):
 
     ax.plot(r["step_axis"], r['nodes_consecutive_rounds'])
 
-    ax.set_title("Mindif por nodos com RMSE global")
+    ax.set_title("Finding optimal consecutive rounds for self-termination")
     ax.set_xlabel("Nodes")
-    ax.set_ylabel("Average rounds")
+    ax.set_ylabel("Rounds")
 
     plt.show()
 
@@ -231,25 +231,6 @@ def average_vs_count_exec():
 
 
 
-def rmse_vs_flowsum_exec():
-
-    iters = 3
-    max_degree = 3
-
-    rmse = builders.SimulatorBuilder().with_agregation_type('average')
-    flowsum = builders.SimulatorBuilder().with_agregation_type('average').with_flowsums_termination()
-    
-    bs = {'rmse' : rmse, 'flowsum' : flowsum}
-    
-    thread_args = (max_degree, iters, bs)
-
-    print("start execution")
-    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args)
-
-    print(final_results)
-    rmse_vs_flowsum(final_results)
-
-
 # TODO meter melhot
 def rounds_rmse_loss_exec():
 
@@ -262,7 +243,7 @@ def rounds_rmse_loss_exec():
     bs = {'0' : b1, '02' : b2, '04' : b3, '06' : b4}
     
     Graphs = []
-    for i in range(1):
+    for i in range(10):
         Graphs.append(graphGen.randomG(250,5,10))
 
     rmses = [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25, 0.5]
@@ -271,6 +252,7 @@ def rounds_rmse_loss_exec():
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
     #print(final_results)
     rounds_rmse_loss(final_results, rmses)
+
 
 # TODO
 def casts_comparison_exec():
@@ -339,21 +321,21 @@ def rounds_rmse_node_removal_exec():
 
 def rounds_rmse_dynamic_exec():
 
-    b = builders.SimulatorBuilder().with_agregation_type('count')
+    b = builders.SimulatorBuilder().with_agregation_type('average')
     # TODO preencher
     b.with_departure_arrival_members_event(10, 30, True)
     bs = {'builder' : b}
 
     G = graphGen.randomG(100,3,10)
-    rmses = [0.1, 0.01, 0.001]
+    rmses = [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25, 0.5]
     thread_args = ([G], bs)
 
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
 
-    print(final_results)
-
     rounds_rmse_dynamic(final_results['builder'], rmses)
+
+
 
 #TODO
 def rounds_rmse_varying_inputs_exec():
@@ -377,12 +359,12 @@ def min_dif_average_exec():
     b = builders.SimulatorBuilder().with_agregation_type('average').with_min_dif_testing(0.01)
     bs = {'builder' : b}
 
-    thread_args = (3, 1, bs)
+    thread_args = (3, 5, bs)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args)
-    print(final_results)
+    final_results = node_step_execution(6, 20, 2, 2, bs, thread_args)
+    #print(final_results)
     min_dif_average(final_results['builder'])
 
 
@@ -442,7 +424,7 @@ def converge():
         inputs[i] = 1.5
 
 
-    b = builders.SimulatorBuilder().with_agregation_type('average').with_scheduled_change_inputs_event(inputs,700)
+    b = builders.SimulatorBuilder().with_agregation_type('count').with_departure_arrival_members_event(10, 2000, False)
     
     builder = {'builder' : b}
     
@@ -467,14 +449,17 @@ def converge():
 
 if __name__ == '__main__': 
     #average_vs_count_exec()
-    #rounds_rmse_dynamic_exec()
     #rounds_rmse_loss_exec()
     #casts_comparison_exec()
-    #min_dif_average_exec()
+
+    #rounds_rmse_dynamic_exec()
+
+
+    min_dif_average_exec()
     #sync_vs_async_exec()
     #async_vs_async_no_timeout_exec()
 
-    converge()
+    #converge()
     
 
 
