@@ -121,11 +121,12 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
     global_results = builde_super_dict(sim_builders)
 
     for n in n_list:
+        print("a gerar")
         if sync_value is None:
             G = graphGen.randomG(n, degree)
         else:
             G = graphGen.randomG(n, degree, sync_value)
-
+        print("gerou")
         # mudar aqui para fazer Contagem
         
         for sim_name, sim_builder in sim_builders.items():

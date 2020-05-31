@@ -77,7 +77,7 @@ def rmse_vs_flowsum(r):
     nodes = r["rmse"]["step_axis"]
 
     one = r["rmse"]
-    two = r["floswum"]
+    two = r["flowsum"]
 
     graph_vs(
         nodes,
@@ -204,7 +204,7 @@ def sync_vs_async(r):
         "Nodes", "Rounds")
 
 
-
+# execs---------------------------------------------------------------------------------------------------
 
 def average_vs_count_exec():
 
@@ -213,11 +213,11 @@ def average_vs_count_exec():
     
     bs = {'average' : average, 'count' : count}
     
-    thread_args = (3, 5, bs)
+    thread_args = (3, 3, bs) # (max degree, iters, ...)
 
     print("start execution")
-    #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args)
+    
+    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args) #(n_min, n_max, step, n_threads, ...)
 
     print(final_results)
     average_vs_count(final_results)
@@ -226,18 +226,18 @@ def average_vs_count_exec():
 
 def rmse_vs_flowsum_exec():
 
-    rmse = builder_simple()
-    flowsum = builder_simple()
-    #rmse = builders.SimulatorBuilder()
-    #flowsum = builders.SimulatorBuilder().with_flowsums_termination()
+    iters = 3
+    max_degree = 3
+
+    rmse = builders.SimulatorBuilder().with_agregation_type('average')
+    flowsum = builders.SimulatorBuilder().with_agregation_type('average').with_flowsums_termination()
     
     bs = {'rmse' : rmse, 'flowsum' : flowsum}
     
-    thread_args = (3, 1, bs)
+    thread_args = (max_degree, iters, bs)
 
     print("start execution")
-    #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
+    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args)
 
     print(final_results)
     rmse_vs_flowsum(final_results)
@@ -246,6 +246,7 @@ def rmse_vs_flowsum_exec():
 # TODO correr com unicast e eunicast depois, mudar manualmente
 def rounds_rmse_loss_exec():
 
+
     b1 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0)
     b2 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0.2)
     b3 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0.4)
@@ -253,12 +254,12 @@ def rounds_rmse_loss_exec():
     
     bs = {'0' : b1, '02' : b2, '04' : b3, '06' : b4}
     
-    G = graphGen.randomG(9,3,10)
+    G = graphGen.randomG(9,3,30)
     rmses = [10, 1, 0.1, 0.01]
     thread_args = (G, 1, bs)
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
-
+    print(final_results)
     rounds_rmse_loss(final_results, rmses)
 
 
@@ -334,8 +335,8 @@ def sync_vs_async_exec():
 
 
 if __name__ == '__main__': 
-    # with_min_dif_testing(0.01)
     average_vs_count_exec()
+    #rounds_rmse_loss_exec()
     
 
 
