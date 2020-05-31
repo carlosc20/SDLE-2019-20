@@ -134,7 +134,7 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
             else:
                 inputs = [0] * (len(G) - 1) + [1]
 
-            simulate_single_nodes_step(n, G, inputs, sim_name, sim_builder, global_results, iter_size)
+            simulate_single(n, G, inputs, sim_name, sim_builder, global_results, iter_size)
 
     return global_results
 
