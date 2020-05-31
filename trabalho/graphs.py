@@ -95,6 +95,15 @@ def rmse_vs_flowsum(r):
 
 
 
+def multicasts(r):
+    graph_multi(
+        r["normal"]["step_axis"], "Comparison", "Nodes", "Rounds",
+        Interval(r["normal"]["med_rounds"],r["normal"]["min_rounds"],r["normal"]["max_rounds"],"No loss","No loss"),
+        Interval(r["02"]["med_rounds"],r["02"]["min_rounds"],r["02"]["max_rounds"],"20% message loss","20% message loss"),
+        Interval(r["04"]["med_rounds"],r["04"]["min_rounds"],r["04"]["max_rounds"],"40% message loss","40% message loss"),
+        Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
+        )
+
 
 # rondas por rmse, para varias loss rates, graficos para broadcast uni e euni
 def rounds_rmse_loss(r, rmse):
@@ -108,28 +117,6 @@ def rounds_rmse_loss(r, rmse):
         Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
         )
 
-def rounds_rmse_loss_uni(r, rmse):
-
-    # uni
-    graph_multi(
-        rmse, "Unicast", "RMSE", "Rounds",
-        Interval(r["0"]["med_rounds"],r["0"]["min_rounds"],r["0"]["max_rounds"],"No loss","No loss"),
-        Interval(r["02"]["med_rounds"],r["02"]["min_rounds"],r["02"]["max_rounds"],"20% message loss","20% message loss"),
-        Interval(r["04"]["med_rounds"],r["04"]["min_rounds"],r["04"]["max_rounds"],"40% message loss","40% message loss"),
-        Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
-        )
-
-
-def rounds_rmse_loss_euni(r, rmse):
-
-    # evaluated uni
-    graph_multi(
-        rmse, "Evaluated Unicast", "RMSE", "Rounds",
-        Interval(r["0"]["med_rounds"],r["0"]["min_rounds"],r["0"]["max_rounds"],"No loss","No loss"),
-        Interval(r["02"]["med_rounds"],r["02"]["min_rounds"],r["02"]["max_rounds"],"20% message loss","20% message loss"),
-        Interval(r["04"]["med_rounds"],r["04"]["min_rounds"],r["04"]["max_rounds"],"40% message loss","40% message loss"),
-        Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
-        )
 
 
 # rondas por rmse com entradas e saídas de nodos (nº variado)
@@ -173,8 +160,8 @@ def min_dif_average(r):
     ax.plot(r["step_axis"], r['nodes_consecutive_rounds'])
 
     ax.set_title("Mindif por nodos com RMSE global")
-    ax.set_xlabel("Nodos")
-    ax.set_ylabel("Média rondas em que estimativa permanece dentro do intervalo mindif")
+    ax.set_xlabel("Nodes")
+    ax.set_ylabel("Average rounds")
 
     plt.show()
 
@@ -182,12 +169,12 @@ def min_dif_average(r):
 
 # rondas e mensagens por nodos, com sync e async, com certo timeout
 # dois sims sync e async, com COUNT
-def sync_vs_async(r):
+def sync_vs_async(r, r2):
 
-    nodes = r["sync"]["nodes"]
+    nodes = r["step_axis"]
 
-    one = r["sync"]
-    two = r["async"]
+    one = r
+    two = r2
 
     graph_vs(
         nodes,
@@ -200,7 +187,29 @@ def sync_vs_async(r):
         nodes, 
         one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Average (sync)', 'Interval (sync)', 
         two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Average (async)', 'Interval (async)', 
-        "Rounds comparison sync vs COUNT", 
+        "Rounds comparison sync vs async", 
+        "Nodes", "Rounds")
+
+
+def async_vs_asynct(r, r2):
+
+    nodes = r["step_axis"]
+
+    one = r
+    two = r2
+
+    graph_vs(
+        nodes,
+        one["med_messages"], one["min_messages"], one["max_messages"], 'Average', 'Interval', 
+        two["med_messages"], two["min_messages"], two["max_messages"], 'Average (with timeout)', 'Interval (with timeout)', 
+        "Messages comparison async vs async with timepout", 
+        "Nodes", "Messages")
+
+    graph_vs(
+        nodes, 
+        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Average', 'Interval', 
+        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Average (with timeout)', 'Interval (with timeout)', 
+        "Rounds comparison async vs async with timeout", 
         "Nodes", "Rounds")
 
 
@@ -243,7 +252,7 @@ def rmse_vs_flowsum_exec():
     rmse_vs_flowsum(final_results)
 
 
-# TODO correr com unicast e eunicast depois, mudar manualmente
+# TODO meter melhot
 def rounds_rmse_loss_exec():
 
 
@@ -256,12 +265,15 @@ def rounds_rmse_loss_exec():
     
     G = graphGen.randomG(9,3,30)
     rmses = [10, 1, 0.1, 0.01]
-    thread_args = (G, 1, bs)
+    thread_args = (G, bs)
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
     print(final_results)
     rounds_rmse_loss(final_results, rmses)
 
+
+def casts_comparison_exec():
+    multicasts(final_results)
 
 
 
@@ -276,7 +288,7 @@ def rounds_rmse_dynamic_exec():
 
     G = graphGen.randomG(9,3,10)
     rmses = [10, 1, 0.1, 0.01]
-    thread_args = (G, 5, bs)
+    thread_args = (G, builders)
 
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
@@ -291,7 +303,7 @@ def rounds_rmse_varying_inputs_exec():
 
     G = graphGen.randomG(9,3,10)
     rmses = [10, 1, 0.1, 0.01]
-    thread_args = (G, 5, bs)
+    thread_args = (G, builders)
 
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
@@ -300,17 +312,17 @@ def rounds_rmse_varying_inputs_exec():
 
 
 
-def min_dif_average_exec(r):
+def min_dif_average_exec():
 
-    b = builders.SimulatorBuilder().with_agregation_type('count').with_min_dif_testing(0.01)
+    b = builders.SimulatorBuilder().with_agregation_type('average').with_min_dif_testing(0.01)
     bs = {'builder' : b}
 
     thread_args = (3, 1, bs)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
-
+    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args)
+    print(final_results)
     min_dif_average(final_results['builder'])
 
 
@@ -318,26 +330,56 @@ def min_dif_average_exec(r):
 def sync_vs_async_exec():
 
 
-    b1 = builders.SimulatorBuilder().with_agregation_type('count')
-    b2 = builders.SimulatorBuilder().with_agregation_type('count').with_timeout_protocol(10)
+    b1 = builders.SimulatorBuilder().with_agregation_type('average')
     
-    bs = {'sync' : b1, 'async' : b2}
+    bs = {'sync' : b1}
     
     thread_args = (3, 1, bs)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
+    final_results_sync = node_step_execution(5, 25, 5, 2, bs, thread_args)
 
-    print(final_results)
-    sync_vs_async(final_results)
+    b2 = builders.SimulatorBuilder().with_agregation_type('average').with_timeout_protocol(10)
+    
+    bs = {'async' : b2}
+    
+    thread_args = (3, 1, bs, 5)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results_async = node_step_execution(5, 25, 5, 2, bs, thread_args)
+
+
+    #print(final_results)
+    sync_vs_async(final_results_sync['sync'], final_results_async['async'])
+
+
+def async_vs_async_no_timeout_exec():
+
+    b1 = builders.SimulatorBuilder().with_agregation_type('average')
+    bs = {'async' : b1}
+    thread_args = (3, 1, bs)
+    final_results1 = node_step_execution(5, 25, 5, 2, bs, thread_args)
+
+    b2 = builders.SimulatorBuilder().with_agregation_type('average').with_timeout_protocol(10)
+    bs = {'asynct' : b2}
+    thread_args = (3, 1, bs)
+    final_results2 = node_step_execution(5, 25, 5, 2, bs, thread_args)
+    print(final_results1)
+    print(final_results2)
+    async_vs_asynct(final_results1['async'], final_results2['asynct'])
 
 
 
 if __name__ == '__main__': 
-    average_vs_count_exec()
+    #average_vs_count_exec()
+    #rmse_vs_flowsum_exec()
     #rounds_rmse_loss_exec()
-    
+    casts_comparison_exec()
+    #min_dif_average_exec()
+    #sync_vs_async_exec()
+    #async_vs_async_no_timeout_exec()
 
 
 
