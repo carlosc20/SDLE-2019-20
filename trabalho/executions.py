@@ -9,9 +9,62 @@ import sys
 import builders
 import copy
 
+class SingleSimulation:
+    def __init__(self, input_len):
+        self.min_r = self.min_m = sys.maxsize
+        self.max_r = self.max_m = -1
+        self.med_r = self.med_m = 0
+        self.med_n_e = [0] * input_len
+        self.med_c_r = [0] * input_len
+        self.input_len = input_len
+
+    def reset(self, input_len):
+        self.min_r = self.min_m = sys.maxsize
+        self.max_r = self.max_m = -1
+        self.med_r = self.med_m = 0
+        self.med_n_e = [0] * input_len
+        self.med_c_r = [0] * input_len
+
+    def simulate_single(self, graph, inputs, sim_builder):
+        builder = copy.deepcopy(sim_builder)
+        t, m, r, n_e, c_r = builder.build(graph, inputs).start()
+
+        if m < self.min_m:
+            self.min_m = m
+
+        if m > self.max_m:
+            self.max_m = m
+
+        if r < self.min_r:
+            self.min_r = r
+
+        if r > self.max_r:
+            self.max_r = r
+
+        for j in range(self.input_len):
+            self.med_n_e[j] += n_e[j]
+            self.med_c_r[j] += c_r[j]
+        
+        self.med_r += r
+        self.med_m += m
+
+    def get_results(self, step, iter_size, sim_name, global_results):
+        global_results[sim_name]['step_axis'].append(step)
+        global_results[sim_name]['med_messages'].append(self.med_m / iter_size)
+        global_results[sim_name]['med_rounds'].append(self.med_r / iter_size)
+        global_results[sim_name]['max_messages'].append(self.max_m)
+        global_results[sim_name]['min_messages'].append(self.min_m)
+        global_results[sim_name]['max_rounds'].append(self.max_r)
+        global_results[sim_name]['min_rounds'].append(self.min_r)
+        global_results[sim_name]['nodes_estimates'].append(list(map(lambda x: x / iter_size, self.med_n_e)))
+        global_results[sim_name]['nodes_consecutive_rounds'].append(list(map(lambda x: x / iter_size, self.med_c_r)))
+
+
+
+
 def builder_simple():
     sim_builder = builders.SimulatorBuilder()
-    sim_builder.with_agregation_type('count').with_evaluated_multicast_protocol(1)
+    sim_builder.with_agregation_type('count') #.with_evaluated_multicast_protocol(1)
     #sim_builder.with_departure_arrivel_members_event(2,10,False)
     # nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)
@@ -53,7 +106,7 @@ def build_dict():
     return results
 
 
-def simulate_single(step, graph, inputs, sim_name, sim_builder, global_results, iter_size):
+def simulate_single_for_rmse(step, graph, inputs, sim_name, sim_builder, global_results):
     global_results[sim_name]['step_axis'].append(step)
     min_r = min_m = sys.maxsize
     max_r = max_m = -1
@@ -61,46 +114,44 @@ def simulate_single(step, graph, inputs, sim_name, sim_builder, global_results, 
     med_n_e = [0] * len(inputs)
     med_c_r = [0] * len(inputs)
 
-    for i in range(iter_size):
+    builder = copy.deepcopy(sim_builder)
+    
+    t, m, r, n_e, c_r = builder.build(graph, inputs).start()
 
-        builder = copy.deepcopy(sim_builder)
-        
-        t, m, r, n_e, c_r = builder.build(graph, inputs).start()
+    if m < min_m:
+        min_m = m
 
-        if m < min_m:
-            min_m = m
+    if m > max_m:
+        max_m = m
 
-        if m > max_m:
-            max_m = m
+    if r < min_r:
+        min_r = r
 
-        if r < min_r:
-            min_r = r
+    if r > max_r:
+        max_r = r
 
-        if r > max_r:
-            max_r = r
+    for j in range(len(inputs)):
+        med_n_e[j] += n_e[j]
+        med_c_r[j] += c_r[j]
+    
+    med_r += r
+    med_m += m
 
-        for j in range(len(inputs)):
-            med_n_e[j] += n_e[j]
-            med_c_r[j] += c_r[j]
-        
-        med_r += r
-        med_m += m
-
-    global_results[sim_name]['med_messages'].append(med_m / iter_size)
-    global_results[sim_name]['med_rounds'].append(med_r / iter_size)
+    global_results[sim_name]['med_messages'].append(med_m)
+    global_results[sim_name]['med_rounds'].append(med_r)
     global_results[sim_name]['max_messages'].append(max_m)
     global_results[sim_name]['min_messages'].append(min_m)
     global_results[sim_name]['max_rounds'].append(max_r)
     global_results[sim_name]['min_rounds'].append(min_r)
-    global_results[sim_name]['nodes_estimates'].append(list(map(lambda x: x / iter_size, med_n_e)))
-    global_results[sim_name]['nodes_consecutive_rounds'].append(list(map(lambda x: x / iter_size, med_c_r)))
+    global_results[sim_name]['nodes_estimates'].append(med_n_e)
+    global_results[sim_name]['nodes_consecutive_rounds'].append(med_c_r)
 
     return global_results
 
 # Retorna [sim_dict] 
 # sim_dict = {}
 
-def thread_execution_rmse_step(rmse_list, graph, iter_size, sim_builders):
+def thread_execution_rmse_step(rmse_list, graph, sim_builders):
     global_results = builde_super_dict(sim_builders)
 
     for r in rmse_list:
@@ -111,7 +162,7 @@ def thread_execution_rmse_step(rmse_list, graph, iter_size, sim_builders):
                 inputs = [0] * (len(graph) - 1) + [1]
             aux_builder = copy.deepcopy(sim_builder)
             aux_builder = sim_builder.with_confidence_value(r)
-            simulate_single(r, graph, inputs, sim_name, aux_builder, global_results, iter_size)
+            simulate_single_for_rmse(r, graph, inputs, sim_name, aux_builder, global_results)
 
     return global_results
 
@@ -120,21 +171,27 @@ def thread_execution_rmse_step(rmse_list, graph, iter_size, sim_builders):
 def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_value = None):
     global_results = builde_super_dict(sim_builders)
 
+    single_simulation = {}
     for n in n_list:
-        if sync_value is None:
-            G = graphGen.randomG(n, degree)
-        else:
-            G = graphGen.randomG(n, degree, sync_value)
-
-        # mudar aqui para fazer Contagem
-        
-        for sim_name, sim_builder in sim_builders.items():
-            if sim_builder.simulator.aggregation_type == 'average':
-                inputs = [1] * len(G)
+        for sim_name in sim_builders:
+            single_simulation[sim_name] = SingleSimulation(n)
+        for i in range(iter_size):
+            if sync_value is None:
+                G = graphGen.randomG(n, degree)
             else:
-                inputs = [0] * (len(G) - 1) + [1]
+                G = graphGen.randomG(n, degree, sync_value)
 
-            simulate_single(n, G, inputs, sim_name, sim_builder, global_results, iter_size)
+            # mudar aqui para fazer Contagem
+            
+            for sim_name, sim_builder in sim_builders.items():
+                if sim_builder.simulator.aggregation_type == 'average':
+                    inputs = [1] * len(G)
+                else:
+                    inputs = [0] * (len(G) - 1) + [1]
+
+                single_simulation[sim_name].simulate_single(G, inputs, sim_builder)
+        for sim_name in sim_builders:
+            single_simulation[sim_name].get_results(n, iter_size, sim_name, global_results)
 
     return global_results
 
@@ -184,6 +241,22 @@ def rmse_step_execution(rmse_list, n_threads, sim_builders, thread_args):
     return execution(rmse_list, thread_execution_rmse_step, n_threads, sim_builders, thread_args)
 
 if __name__ == '__main__': 
+    
+    #(degree, iter_size ..., sync_value (None if async))
+    #thread_args = (3, 1, builders, 10)
+    
+    #(n_min, n_max, step, n_threads, ..., ...)
+    #final_results = executions.node_step_execution(5, 10, 5, 2, builders, thread_args)
+    
+    #([rmse], ....) 
+    #G = graphGen.randomG(9,3,10)
+    #rmses = [10, 1, 0.1, 0.01]
+    #thread_args = (G, 1, builders)
+    #print("start execution")
+    #final_results = rmse_step_execution(rmses, 2, builders, thread_args)
+    
+   if __name__ == '__main__': 
+    
     b1 = builder_simple()
     b2 = builder_simple()
     b3 = builder_simple()
@@ -199,8 +272,9 @@ if __name__ == '__main__':
     #([rmse], ....) 
     G = graphGen.randomG(9,3,10)
     rmses = [10, 1, 0.1, 0.01]
-    thread_args = (G, 1, builders)
+    thread_args = (G, builders)
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, builders, thread_args)
     
     print(final_results)
+    
