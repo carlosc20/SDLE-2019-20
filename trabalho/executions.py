@@ -138,8 +138,8 @@ def simulate_single_for_rmse(step, graph_list, inputs, sim_name, sim_builder, gl
         med_r += r
         med_m += m
 
-    global_results[sim_name]['med_messages'].append(med_m)
-    global_results[sim_name]['med_rounds'].append(med_r)
+    global_results[sim_name]['med_messages'].append(med_m / len(graph_list))
+    global_results[sim_name]['med_rounds'].append(med_r / len(graph_list))
     global_results[sim_name]['max_messages'].append(max_m)
     global_results[sim_name]['min_messages'].append(min_m)
     global_results[sim_name]['max_rounds'].append(max_r)

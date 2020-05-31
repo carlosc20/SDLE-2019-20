@@ -220,11 +220,11 @@ def average_vs_count_exec():
     
     bs = {'average' : average, 'count' : count}
     
-    thread_args = (3, 3, bs) # (max degree, iters, ...)
+    thread_args = (3, 5, bs, 10) # (max degree, iters, ...)
 
     print("start execution")
     
-    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args) #(n_min, n_max, step, n_threads, ...)
+    final_results = node_step_execution(5, 50, 5, 2, bs, thread_args) #(n_min, n_max, step, n_threads, ...)
 
     print(final_results)
     average_vs_count(final_results)
@@ -262,8 +262,8 @@ def rounds_rmse_loss_exec():
     bs = {'0' : b1, '02' : b2, '04' : b3, '06' : b4}
     
     Graphs = []
-    for i in range(10):
-        Graphs.append(graphGen.randomG(100,5,10))
+    for i in range(1):
+        Graphs.append(graphGen.randomG(250,5,10))
 
     rmses = [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25, 0.5]
     thread_args = (Graphs, bs)
@@ -431,7 +431,6 @@ def async_vs_async_no_timeout_exec():
     async_vs_asynct(final_results1['async'], final_results2['asynct'])
 
 
-
 if __name__ == '__main__': 
     #average_vs_count_exec()
     #rounds_rmse_dynamic_exec()
@@ -440,6 +439,8 @@ if __name__ == '__main__':
     #min_dif_average_exec()
     #sync_vs_async_exec()
     #async_vs_async_no_timeout_exec()
+
+    
 
 
 

@@ -229,9 +229,9 @@ class Simulator:
         for n in graph.nodes:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
         
-        #print('flowsums: ', flowsums)
         r = input_sum % len(graph)
-        return (flowsums - r) ** 2 < confidence_value
+        print('flowsums: ', math.sqrt((flowsums - r) ** 2))
+        return (math.sqrt((flowsums - r) ** 2) / len(graph)) < confidence_value
 
 
     # uses RMSE as limit to termination
