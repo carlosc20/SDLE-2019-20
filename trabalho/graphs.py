@@ -1,4 +1,6 @@
-from executions import execution
+from executions import *
+import graphGen
+import builders
 
 import matplotlib.pyplot as plt
 
@@ -92,6 +94,8 @@ def rmse_vs_flowsum(r):
         "Nodes", "Rounds")
 
 
+
+
 # rondas por rmse, para varias loss rates, graficos para broadcast uni e euni
 # TODO, mudar nomes para uni e euni, se calhar tirar 0.6 loss rate?
 def rounds_rmse_loss(r, rmse):
@@ -105,6 +109,8 @@ def rounds_rmse_loss(r, rmse):
         Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
         )
 
+def rounds_rmse_loss_uni(r, rmse):
+
     # uni
     graph_multi(
         rmse, "Unicast", "RMSE", "Rounds",
@@ -113,6 +119,9 @@ def rounds_rmse_loss(r, rmse):
         Interval(r["04"]["med_rounds"],r["04"]["min_rounds"],r["04"]["max_rounds"],"40% message loss","40% message loss"),
         Interval(r["06"]["med_rounds"],r["06"]["min_rounds"],r["06"]["max_rounds"],"60% message loss","60% message loss")
         )
+
+
+def rounds_rmse_loss_euni(r, rmse):
 
     # evaluated uni
     graph_multi(
@@ -162,8 +171,7 @@ def min_dif_average(r):
     
     fig, ax = plt.subplots()
 
-    ax.plot(r["step_axis"], r["??"], '-')
-    ax.fill_between(r["step_axis"], r["min_??"], r["max_??"], alpha=0.2)
+    ax.plot(r["step_axis"], r['nodes_consecutive_rounds'])
 
     ax.set_title("Mindif por nodos com RMSE global")
     ax.set_xlabel("Nodos")
@@ -198,9 +206,69 @@ def sync_vs_async(r):
 
 
 
+
+def average_vs_count_exec():
+
+    average = builder_simple()
+    count = builder_simple()
+    #average = builders.SimulatorBuilder().with_agregation_type('average')
+    #count = builders.SimulatorBuilder().with_agregation_type('count')
+    
+    bs = {'average' : average, 'count' : count}
+    
+    thread_args = (3, 1, bs)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
+
+    print(final_results)
+    average_vs_count(final_results)
+
+
+
+def rmse_vs_flowsum_exec():
+
+    rmse = builder_simple()
+    flowsum = builder_simple()
+    #rmse = builders.SimulatorBuilder()
+    #flowsum = builders.SimulatorBuilder().with_flowsums_termination()
+    
+    bs = {'rmse' : rmse, 'flowsum' : flowsum}
+    
+    thread_args = (3, 1, bs)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
+
+    print(final_results)
+    rmse_vs_flowsum(final_results)
+
+
+def rounds_rmse_loss_exec():
+
+    b1 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0)
+    b2 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0.2)
+    b3 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0.4)
+    b4 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0.6)
+    
+    bs = {'0' : b1, '02' : b2, '04' : b3, '06' : b4}
+    
+    #([rmse], ....) 
+    G = graphGen.randomG(9,3,10)
+    rmses = [10, 1, 0.1, 0.01]
+    thread_args = (G, 1, bs)
+    print("start execution")
+    final_results = rmse_step_execution(rmses, 2, bs, thread_args)
+
+    rounds_rmse_loss(final_results, rmses)
+
 if __name__ == '__main__': 
-    results = execution(10,50,10,2)
-    print(results)
+    # with_min_dif_testing(0.01)
+    average_vs_count_exec()
+    
+
 
 
 

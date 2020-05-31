@@ -200,6 +200,7 @@ if __name__ == '__main__':
     G = graphGen.randomG(9,3,10)
     rmses = [10, 1, 0.1, 0.01]
     thread_args = (G, 1, builders)
+    print("start execution")
     final_results = rmse_step_execution(rmses, 2, builders, thread_args)
     
     print(final_results)
