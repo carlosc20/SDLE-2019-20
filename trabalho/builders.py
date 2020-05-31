@@ -189,9 +189,9 @@ def main():
     sim_builder = SimulatorBuilder()
     #as an example, default is already 0
     #sim_builder.with_multicast_protocol(1)
-    sim_builder.with_loss_rate(0).with_agregation_type('count')
+    sim_builder.with_loss_rate(0).with_agregation_type('average')
     sim_builder.with_confidence_value(0.01)
-    #sim_builder.with_flowsums_termination()
+    sim_builder.with_flowsums_termination()
     
     #nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)

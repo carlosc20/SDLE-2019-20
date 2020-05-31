@@ -213,11 +213,11 @@ def average_vs_count_exec():
     
     bs = {'average' : average, 'count' : count}
     
-    thread_args = (3, 3, bs) # (max degree, iters, ...)
+    thread_args = (3, 5, bs, 10) # (max degree, iters, ...)
 
     print("start execution")
     
-    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args) #(n_min, n_max, step, n_threads, ...)
+    final_results = node_step_execution(5, 50, 5, 2, bs, thread_args) #(n_min, n_max, step, n_threads, ...)
 
     print(final_results)
     average_vs_count(final_results)
@@ -256,7 +256,7 @@ def rounds_rmse_loss_exec():
     
     G = graphGen.randomG(9,3,30)
     rmses = [10, 1, 0.1, 0.01]
-    thread_args = ([G], 1, bs)
+    thread_args = ([G], bs)
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
     print(final_results)
@@ -370,11 +370,12 @@ def sync_vs_async_exec():
     sync_vs_async(final_results)
 
 
-
 if __name__ == '__main__': 
     #average_vs_count_exec()
-    rounds_rmse_dynamic_exec()
+    #rmse_vs_flowsum_exec()
     #rounds_rmse_loss_exec()
+    
+
     
 
 
