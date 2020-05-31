@@ -14,20 +14,15 @@ class SingleSimulation:
         self.min_r = self.min_m = sys.maxsize
         self.max_r = self.max_m = -1
         self.med_r = self.med_m = 0
-        self.med_n_e = [0] * input_len
+        self.med_n_e = []
         self.med_c_r = [0] * input_len
         self.input_len = input_len
 
-    def reset(self, input_len):
-        self.min_r = self.min_m = sys.maxsize
-        self.max_r = self.max_m = -1
-        self.med_r = self.med_m = 0
-        self.med_n_e = [0] * input_len
-        self.med_c_r = [0] * input_len
-
     def simulate_single(self, graph, inputs, sim_builder):
         builder = copy.deepcopy(sim_builder)
-        t, m, r, n_e, c_r = builder.build(graph, inputs).start()
+
+        sim = builder.build(graph, inputs)
+        t, m, r, n_e, c_r = sim.start()
 
         if m < self.min_m:
             self.min_m = m
@@ -41,14 +36,16 @@ class SingleSimulation:
         if r > self.max_r:
             self.max_r = r
 
-        for j in range(self.input_len):
-            self.med_n_e[j] += n_e[j]
+        if not self.med_n_e:
+            self.med_n_e = n_e
+
+        for j in range(len(sim.graph)):
             self.med_c_r[j] += c_r[j]
         
         self.med_r += r
         self.med_m += m
 
-    def get_results(self, step, iter_size, sim_name, global_results):
+    def get_results(self, step, iter_size, sim_name, global_results, n_length):
         global_results[sim_name]['step_axis'].append(step)
         global_results[sim_name]['med_messages'].append(self.med_m / iter_size)
         global_results[sim_name]['med_rounds'].append(self.med_r / iter_size)
@@ -56,15 +53,15 @@ class SingleSimulation:
         global_results[sim_name]['min_messages'].append(self.min_m)
         global_results[sim_name]['max_rounds'].append(self.max_r)
         global_results[sim_name]['min_rounds'].append(self.min_r)
-        global_results[sim_name]['nodes_estimates'].append(list(map(lambda x: x / iter_size, self.med_n_e)))
-        global_results[sim_name]['nodes_consecutive_rounds'].append(list(map(lambda x: x / iter_size, self.med_c_r)))
+        global_results[sim_name]['nodes_estimates'].append(self.med_n_e)
+        global_results[sim_name]['nodes_consecutive_rounds'].append(sum(self.med_c_r) / n_length)
 
 
 
 
 def builder_simple():
     sim_builder = builders.SimulatorBuilder()
-    sim_builder.with_agregation_type('count') #.with_evaluated_multicast_protocol(1)
+    sim_builder.with_agregation_type('count').with_evaluated_multicast_protocol(1)
     #sim_builder.with_departure_arrivel_members_event(2,10,False)
     # nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)
@@ -106,36 +103,40 @@ def build_dict():
     return results
 
 
-def simulate_single_for_rmse(step, graph, inputs, sim_name, sim_builder, global_results):
+def simulate_single_for_rmse(step, graph_list, inputs, sim_name, sim_builder, global_results):
     global_results[sim_name]['step_axis'].append(step)
     min_r = min_m = sys.maxsize
     max_r = max_m = -1
     med_r = med_m = 0
-    med_n_e = [0] * len(inputs)
+    med_n_e = []
     med_c_r = [0] * len(inputs)
 
-    builder = copy.deepcopy(sim_builder)
-    
-    t, m, r, n_e, c_r = builder.build(graph, inputs).start()
+    for g in graph_list:
 
-    if m < min_m:
-        min_m = m
+        builder = copy.deepcopy(sim_builder)
+        
+        t, m, r, n_e, c_r = builder.build(g, inputs).start()
 
-    if m > max_m:
-        max_m = m
+        if m < min_m:
+            min_m = m
 
-    if r < min_r:
-        min_r = r
+        if m > max_m:
+            max_m = m
 
-    if r > max_r:
-        max_r = r
+        if r < min_r:
+            min_r = r
 
-    for j in range(len(inputs)):
-        med_n_e[j] += n_e[j]
-        med_c_r[j] += c_r[j]
-    
-    med_r += r
-    med_m += m
+        if r > max_r:
+            max_r = r
+
+        if not med_n_e:
+            med_n_e = n_e
+
+        for j in range(len(g)):
+            med_c_r[j] += c_r[j]
+        
+        med_r += r
+        med_m += m
 
     global_results[sim_name]['med_messages'].append(med_m)
     global_results[sim_name]['med_rounds'].append(med_r)
@@ -144,25 +145,25 @@ def simulate_single_for_rmse(step, graph, inputs, sim_name, sim_builder, global_
     global_results[sim_name]['max_rounds'].append(max_r)
     global_results[sim_name]['min_rounds'].append(min_r)
     global_results[sim_name]['nodes_estimates'].append(med_n_e)
-    global_results[sim_name]['nodes_consecutive_rounds'].append(med_c_r)
+    global_results[sim_name]['nodes_consecutive_rounds'].append(sum(med_c_r) / len(graph_list[0]))
 
     return global_results
 
 # Retorna [sim_dict] 
 # sim_dict = {}
 
-def thread_execution_rmse_step(rmse_list, graph, sim_builders):
+def thread_execution_rmse_step(rmse_list, graph_list, sim_builders):
     global_results = builde_super_dict(sim_builders)
 
     for r in rmse_list:
         for sim_name, sim_builder in sim_builders.items():
             if sim_builder.simulator.aggregation_type == 'average':
-                inputs = [1] * len(graph)
+                inputs = [1] * len(graph_list[0])
             else:
-                inputs = [0] * (len(graph) - 1) + [1]
+                inputs = [0] * (len(graph_list[0]) - 1) + [1]
             aux_builder = copy.deepcopy(sim_builder)
             aux_builder = sim_builder.with_confidence_value(r)
-            simulate_single_for_rmse(r, graph, inputs, sim_name, aux_builder, global_results)
+            simulate_single_for_rmse(r, graph_list, inputs, sim_name, aux_builder, global_results)
 
     return global_results
 
@@ -191,7 +192,7 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
 
                 single_simulation[sim_name].simulate_single(G, inputs, sim_builder)
         for sim_name in sim_builders:
-            single_simulation[sim_name].get_results(n, iter_size, sim_name, global_results)
+            single_simulation[sim_name].get_results(n, iter_size, sim_name, global_results, n)
 
     return global_results
 
@@ -261,7 +262,7 @@ if __name__ == '__main__':
     b2 = builder_simple()
     b3 = builder_simple()
     
-    builders = {'simples1' : b1}
+    builders = {'simples1' : b1, 'simples2': b2}
     
     #(degree, iter_size ..., sync_value (None if async))
     #thread_args = (3, 1, builders, 10)

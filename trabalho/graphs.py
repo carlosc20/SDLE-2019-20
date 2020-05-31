@@ -256,13 +256,49 @@ def rounds_rmse_loss_exec():
     
     G = graphGen.randomG(9,3,30)
     rmses = [10, 1, 0.1, 0.01]
-    thread_args = (G, 1, bs)
+    thread_args = ([G], 1, bs)
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
     print(final_results)
     rounds_rmse_loss(final_results, rmses)
 
 
+def rounds_rmse_node_entry_exec():
+
+    b = builders.SimulatorBuilder().with_agregation_type('count')
+    # TODO preencher
+    b.with_scheduled_add_members_event(5, 3, 0, 30, False,  w=10)
+    bs = {'builder' : b}
+
+    G = graphGen.randomG(100,3,10)
+    rmses = [0.1, 0.01, 0.001]
+    thread_args = ([G], bs)
+
+    print("start execution")
+    final_results = rmse_step_execution(rmses, 3, bs, thread_args)
+
+    print(final_results['builder']['nodes_estimates'])
+
+    rounds_rmse_dynamic(final_results['builder'], rmses)
+
+
+def rounds_rmse_node_removal_exec():
+
+    b = builders.SimulatorBuilder().with_agregation_type('count')
+    # TODO preencher
+    b.with_scheduled_remove_members_event(10, 20, False)
+    bs = {'builder' : b}
+
+    G = graphGen.randomG(100,3,10)
+    rmses = [0.1, 0.01, 0.001]
+    thread_args = ([G], bs)
+
+    print("start execution")
+    final_results = rmse_step_execution(rmses, 3, bs, thread_args)
+
+    print(final_results['builder']['nodes_estimates'])
+
+    rounds_rmse_dynamic(final_results['builder'], rmses)
 
 
 
@@ -270,16 +306,17 @@ def rounds_rmse_dynamic_exec():
 
     b = builders.SimulatorBuilder().with_agregation_type('count')
     # TODO preencher
-    b.with_scheduled_add_members_event(self, numberToAdd, numberOfConnections, input, n_rounds, repeatable,  w=None)
-    b.with_scheduled_remove_members_event(self, numberToRemove, n_rounds, repeatable)
+    b.with_departure_arrival_members_event(10, 30, True)
     bs = {'builder' : b}
 
-    G = graphGen.randomG(9,3,10)
-    rmses = [10, 1, 0.1, 0.01]
-    thread_args = (G, 5, bs)
+    G = graphGen.randomG(100,3,10)
+    rmses = [0.1, 0.01, 0.001]
+    thread_args = ([G], bs)
 
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
+
+    print(final_results)
 
     rounds_rmse_dynamic(final_results['builder'], rmses)
 
@@ -291,7 +328,7 @@ def rounds_rmse_varying_inputs_exec():
 
     G = graphGen.randomG(9,3,10)
     rmses = [10, 1, 0.1, 0.01]
-    thread_args = (G, 5, bs)
+    thread_args = ([G], 5, bs)
 
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
@@ -335,7 +372,8 @@ def sync_vs_async_exec():
 
 
 if __name__ == '__main__': 
-    average_vs_count_exec()
+    #average_vs_count_exec()
+    rounds_rmse_dynamic_exec()
     #rounds_rmse_loss_exec()
     
 

@@ -33,7 +33,7 @@ class Simulator:
         self.max_rounds = None
         self.min_dif = None
 
-        self.departure_arrival_set = {}
+        self.estimates_per_round = []
 
         self.graph_events = {}
 
@@ -63,7 +63,8 @@ class Simulator:
 
             self.current_time = time
             self.n_rounds += 1
-            
+            self.update_stored_estimates()
+   
             inbox = {} # destino -> lista de msgs
             timeouts = {}
             for m in messages:
@@ -114,18 +115,24 @@ class Simulator:
 
         return self.current_time, self.message_counter, self.n_rounds, n_e, rounds_self_term
     
-    
-    def get_stats(self):
-        n_e = []
-        rounds_self_term = [0] * len(self.graph)
+
+    def update_stored_estimates(self):
+        aux = []
         for n in self.graph:
             node = self.graph.nodes[n]['flownode']
             m = 1 / node.local_estimate if (self.aggregation_type is 'count' and node.local_estimate != 0) else node.local_estimate
-            n_e.append(m)
+            aux.append(m)
+        self.estimates_per_round.append(aux)
+
+    
+    def get_stats(self):
+        rounds_self_term = [0] * len(self.graph)
+        for n in self.graph:
+            node = self.graph.nodes[n]['flownode']
             if self.termination_type is 'self' or self.test_type is 'self_testing':
                 rounds_self_term[n] = node.getConsecutiveRounds()
 
-        return n_e, rounds_self_term
+        return self.estimates_per_round, rounds_self_term
 
 
     def _message_count(self, events):
@@ -223,9 +230,8 @@ class Simulator:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
         
         #print('flowsums: ', flowsums)
-        r_up = input_sum % len(graph) + confidence_value
-        r_down = input_sum % len(graph) - confidence_value
-        return flowsums < r_up and flowsums > r_down
+        r = input_sum % len(graph)
+        return (flowsums - r) ** 2 < confidence_value
 
 
     # uses RMSE as limit to termination
@@ -252,7 +258,7 @@ class Simulator:
             le = 1 / node.local_estimate if node.local_estimate != 0 else 0
             square_error_sum += (le - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph)) 
-        #print('rmse: ', rmse)
+        print('rmse: ', rmse)
         return rmse < target_rmse
 
 
@@ -261,16 +267,22 @@ class Simulator:
             v.ticker += 1
             if v.ticker == v.n_rounds:
                 if k == 'add_members':
+                    print("adding members")
                     self._addMembers(v)
                 elif k == 'remove_members':
+                    print("removing members")
                     self._removeMembers(v)
                 elif k == 'change_inputs':
+                    print("change inputs")
                     self._changeInputs(v)
                 else:
+                    print("departure arrival")
                     self._DAMembers(v)
-            if v.repeatable:
-                v.ticker = 0
+                if v.repeatable:
+                    v.ticker = 0
 
+
+    
 
     def _changeInputs(self, ci):
         for (n, i) in ci.input_by_nodes.items():
@@ -284,15 +296,12 @@ class Simulator:
         self.input_sum += add_e.input * add_e.numberToAdd
 
         if self.aggregation_type == 'average':            
-            self.target_value = inputs_sum / len(graph)
+            self.target_value = self.inputs_sum / len(self.graph)
         elif self.aggregation_type == 'count':
-            self.target_value = len(graph)
+            self.target_value = len(self.graph)
         else:
             print("unavailable")
             #TODO
-        nx.draw(self.graph, with_labels=True)
-        plt.show()
-
 
     #só usar com grafos maiores. perigosa
     def _removeMembers(self, rem_e):
@@ -301,7 +310,13 @@ class Simulator:
         for r in removed:
             self.input_sum -= r.input 
 
-        self.target_value = self.input_sum / len(self.graph)
+        if self.aggregation_type == 'average':            
+            self.target_value = self.inputs_sum / len(self.graph)
+        elif self.aggregation_type == 'count':
+            self.target_value = len(self.graph)
+        else:
+            print("unavailable")
+            #TODO
 
         #remove messages to removed members
         removed_ids = [n.id for n in removed]
@@ -321,3 +336,10 @@ class Simulator:
             node = self.graph.nodes[n]['flownode']
             node.__init__(node.id, node.neighbours, node.input)
 
+        i = 0
+        for n in self.graph.nodes:
+            node = self.graph.nodes[n]['flownode']
+            print(node.local_estimate)
+            i += 1
+
+        print(i)
