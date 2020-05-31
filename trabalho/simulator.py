@@ -230,7 +230,7 @@ class Simulator:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
         
         r = input_sum % len(graph)
-        print('flowsums: ', math.sqrt((flowsums - r) ** 2))
+        #print('flowsums: ', math.sqrt((flowsums - r) ** 2))
         return (math.sqrt((flowsums - r) ** 2) / len(graph)) < confidence_value
 
 

@@ -15,8 +15,9 @@ class SingleSimulation:
         self.max_r = self.max_m = -1
         self.med_r = self.med_m = 0
         self.med_n_e = []
-        self.med_c_r = [0] * input_len
+        self.med_c_r = 0
         self.input_len = input_len
+        self.iter = 0
 
     def simulate_single(self, graph, inputs, sim_builder):
         builder = copy.deepcopy(sim_builder)
@@ -39,8 +40,11 @@ class SingleSimulation:
         if not self.med_n_e:
             self.med_n_e = n_e
 
-        for j in range(len(sim.graph)):
-            self.med_c_r[j] += c_r[j]
+        self.med_c_r += max(c_r)
+
+        print(self.iter, c_r)
+        print(self.iter, self.med_c_r)
+        self.iter += 1
         
         self.med_r += r
         self.med_m += m
@@ -55,8 +59,7 @@ class SingleSimulation:
         global_results[sim_name]['max_rounds'].append(self.max_r)
         global_results[sim_name]['min_rounds'].append(self.min_r)
         global_results[sim_name]['nodes_estimates'].append(self.med_n_e)
-        global_results[sim_name]['nodes_consecutive_rounds'].append((sum(self.med_c_r) / iter_size) / n_nodes)
-
+        global_results[sim_name]['nodes_consecutive_rounds'].append(self.med_c_r / iter_size)
 
 
 
@@ -146,7 +149,7 @@ def simulate_single_for_rmse(step, graph_list, inputs, sim_name, sim_builder, gl
     global_results[sim_name]['max_rounds'].append(max_r)
     global_results[sim_name]['min_rounds'].append(min_r)
     global_results[sim_name]['nodes_estimates'].append(med_n_e)
-    global_results[sim_name]['nodes_consecutive_rounds'].append(sum(med_c_r) / len(graph_list[0]))
+    global_results[sim_name]['nodes_consecutive_rounds'].append((sum(med_c_r) / len(graph_list)) /len(graph_list[0]))
 
     return global_results
 
