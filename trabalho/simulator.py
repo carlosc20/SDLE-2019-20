@@ -243,7 +243,7 @@ class Simulator:
             node = graph.nodes[n]['flownode']
             square_error_sum += (node.local_estimate - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph))
-        #print('rmse: ', rmse)
+        print('rmse: ', rmse)
 
         return rmse < target_rmse
 
@@ -285,9 +285,14 @@ class Simulator:
     
 
     def _changeInputs(self, ci):
+        self.inputs_sum = 0
         for (n, i) in ci.input_by_nodes.items():
             node = self.graph.nodes[n]['flownode']
             node.input = i
+            self.inputs_sum += i
+        
+        if self.aggregation_type == 'average':         
+            self.target_value = self.inputs_sum / len(self.graph)
 
 
     #input igual para todos os nodos adicionados
