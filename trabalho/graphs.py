@@ -264,6 +264,44 @@ def rounds_rmse_loss_exec():
 
     rounds_rmse_loss(final_results, rmses)
 
+#TODO os outros rmse
+
+
+
+def min_dif_average_exec(r):
+
+    b = builders.SimulatorBuilder().with_agregation_type('count').with_min_dif_testing(0.01)
+    bs = {'builder' : b}
+
+    thread_args = (3, 1, bs)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
+
+    min_dif_average(final_results['builder'])
+
+
+
+def sync_vs_async_exec():
+
+
+    b1 = builders.SimulatorBuilder().with_agregation_type('count')
+    b2 = builders.SimulatorBuilder().with_agregation_type('count').with_timeout_protocol(10)
+    
+    bs = {'sync' : b1, 'async' : b2}
+    
+    thread_args = (3, 1, bs)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
+
+    print(final_results)
+    sync_vs_async(final_results)
+
+
+
 if __name__ == '__main__': 
     # with_min_dif_testing(0.01)
     average_vs_count_exec()
