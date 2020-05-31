@@ -34,7 +34,7 @@ def graph_vs(x, med1, min1, max1, med_label1, int_label1, med2, min2, max2, med_
 
     fig, ax = plt.subplots()
 
-    ax.plot(x, med1, '-', label=med_label1)
+    ax.plot(x, med1, label=med_label1)
     ax.fill_between(x, min1, max1, alpha=0.2, label=int_label1)
 
     ax.plot(x, med2, label=med_label2)
@@ -97,7 +97,6 @@ def rmse_vs_flowsum(r):
 
 
 # rondas por rmse, para varias loss rates, graficos para broadcast uni e euni
-# TODO, mudar nomes para uni e euni, se calhar tirar 0.6 loss rate?
 def rounds_rmse_loss(r, rmse):
 
     # normal/broadcast
@@ -166,7 +165,7 @@ def rounds_rmse_varying_inputs(r, rmse):
 
 
 # media de rondas que estimativa fica no intervalo mindif, por nr de nodos
-# TODO por nos resultados isto, substituir os ??, por legendas direito
+# TODO por legendas direito
 def min_dif_average(r):
     
     fig, ax = plt.subplots()
@@ -209,18 +208,16 @@ def sync_vs_async(r):
 
 def average_vs_count_exec():
 
-    average = builder_simple()
-    count = builder_simple()
-    #average = builders.SimulatorBuilder().with_agregation_type('average')
-    #count = builders.SimulatorBuilder().with_agregation_type('count')
+    average = builders.SimulatorBuilder().with_agregation_type('average')
+    count = builders.SimulatorBuilder().with_agregation_type('count')
     
     bs = {'average' : average, 'count' : count}
     
-    thread_args = (3, 1, bs)
+    thread_args = (3, 5, bs)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(5, 10, 5, 2, bs, thread_args)
+    final_results = node_step_execution(5, 25, 5, 2, bs, thread_args)
 
     print(final_results)
     average_vs_count(final_results)
@@ -246,6 +243,7 @@ def rmse_vs_flowsum_exec():
     rmse_vs_flowsum(final_results)
 
 
+# TODO correr com unicast e eunicast depois, mudar manualmente
 def rounds_rmse_loss_exec():
 
     b1 = builders.SimulatorBuilder().with_agregation_type('count').with_loss_rate(0)
@@ -255,7 +253,6 @@ def rounds_rmse_loss_exec():
     
     bs = {'0' : b1, '02' : b2, '04' : b3, '06' : b4}
     
-    #([rmse], ....) 
     G = graphGen.randomG(9,3,10)
     rmses = [10, 1, 0.1, 0.01]
     thread_args = (G, 1, bs)
@@ -264,7 +261,41 @@ def rounds_rmse_loss_exec():
 
     rounds_rmse_loss(final_results, rmses)
 
-#TODO os outros rmse
+
+
+
+
+def rounds_rmse_dynamic_exec():
+
+    b = builders.SimulatorBuilder().with_agregation_type('count')
+    # TODO preencher
+    b.with_scheduled_add_members_event(self, numberToAdd, numberOfConnections, input, n_rounds, repeatable,  w=None)
+    b.with_scheduled_remove_members_event(self, numberToRemove, n_rounds, repeatable)
+    bs = {'builder' : b}
+
+    G = graphGen.randomG(9,3,10)
+    rmses = [10, 1, 0.1, 0.01]
+    thread_args = (G, 5, bs)
+
+    print("start execution")
+    final_results = rmse_step_execution(rmses, 2, bs, thread_args)
+
+    rounds_rmse_dynamic(final_results['builder'], rmses)
+
+
+def rounds_rmse_varying_inputs_exec():
+    # TODO preencher
+    b = builders.SimulatorBuilder().with_agregation_type('count').with_scheduled_change_inputs_event(self, input_by_node, n_rounds)
+    bs = {'builder' : b}
+
+    G = graphGen.randomG(9,3,10)
+    rmses = [10, 1, 0.1, 0.01]
+    thread_args = (G, 5, bs)
+
+    print("start execution")
+    final_results = rmse_step_execution(rmses, 2, bs, thread_args)
+
+    rounds_rmse_varying_inputs(final_results['builder'], rmses)
 
 
 
