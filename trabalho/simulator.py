@@ -230,7 +230,7 @@ class Simulator:
             flowsums += sum(graph.nodes[n]['flownode'].flows.values())
         
         r = input_sum % len(graph)
-        print('flowsums: ', math.sqrt((flowsums - r) ** 2))
+        #print('flowsums: ', math.sqrt((flowsums - r) ** 2))
         return (math.sqrt((flowsums - r) ** 2) / len(graph)) < confidence_value
 
 
@@ -243,7 +243,7 @@ class Simulator:
             node = graph.nodes[n]['flownode']
             square_error_sum += (node.local_estimate - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph))
-        print('rmse: ', rmse)
+        #print('rmse: ', rmse)
 
         return rmse < target_rmse
 
