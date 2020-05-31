@@ -70,27 +70,6 @@ def average_vs_count(r):
         "Nodes", "Rounds")
 
 
-# rondas e mensagens por nodos, rmse vs flowsum termination
-# dois sims rmse e flowsum, com COUNT
-def rmse_vs_flowsum(r):
-    nodes = r["rmse"]["step_axis"]
-
-    one = r["rmse"]
-    two = r["flowsum"]
-
-    graph_vs(
-        nodes,
-        one["med_messages"], one["min_messages"], one["max_messages"], 'RMSE',
-        two["med_messages"], two["min_messages"], two["max_messages"], 'FLOWSUM',
-        "Messages comparison RMSE vs FLOWSUM termination", 
-        "Nodes", "Messages")
-
-    graph_vs(
-        nodes, 
-        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'RMSE',
-        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'FLOWSUM',
-        "Rounds comparison RMSE vs FLOWSUM termination", 
-        "Nodes", "Rounds")
 
 
 
@@ -176,15 +155,15 @@ def sync_vs_async(r, r2):
 
     graph_vs(
         nodes,
-        one["med_messages"], one["min_messages"], one["max_messages"], 'Average (sync)',
-        two["med_messages"], two["min_messages"], two["max_messages"], 'Average (async)',
+        one["med_messages"], one["min_messages"], one["max_messages"], 'Sync',
+        two["med_messages"], two["min_messages"], two["max_messages"], 'Async',
         "Messages comparison sync vs async", 
         "Nodes", "Messages")
 
     graph_vs(
         nodes, 
-        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Average (sync)',
-        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Average (async)',
+        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Sync',
+        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Async',
         "Rounds comparison sync vs async", 
         "Nodes", "Rounds")
 
@@ -198,15 +177,15 @@ def async_vs_asynct(r, r2):
 
     graph_vs(
         nodes,
-        one["med_messages"], one["min_messages"], one["max_messages"], 'Average',
-        two["med_messages"], two["min_messages"], two["max_messages"], 'Average (with timeout)',
-        "Messages comparison async vs async with timepout", 
+        one["med_messages"], one["min_messages"], one["max_messages"], 'Without timeout',
+        two["med_messages"], two["min_messages"], two["max_messages"], 'With timeout',
+        "Messages comparison async vs async with timeout", 
         "Nodes", "Messages")
 
     graph_vs(
         nodes, 
-        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Average',
-        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'Average (with timeout)',
+        one["med_rounds"], one["min_rounds"], one["max_rounds"], 'Without timeout',
+        two["med_rounds"], two["min_rounds"], two["max_rounds"], 'With timeout',
         "Rounds comparison async vs async with timeout", 
         "Nodes", "Rounds")
 
@@ -376,7 +355,7 @@ def sync_vs_async_exec():
     
     bs = {'sync' : b1}
     
-    thread_args = (3, 1, bs)
+    thread_args = (3, 3, bs)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
@@ -386,7 +365,7 @@ def sync_vs_async_exec():
     
     bs = {'async' : b2}
     
-    thread_args = (3, 1, bs, 5)
+    thread_args = (3, 3, bs, 5)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
@@ -401,15 +380,14 @@ def async_vs_async_no_timeout_exec():
 
     b1 = builders.SimulatorBuilder().with_agregation_type('average')
     bs = {'async' : b1}
-    thread_args = (3, 1, bs)
+    thread_args = (3, 3, bs)
     final_results1 = node_step_execution(5, 25, 5, 2, bs, thread_args)
 
     b2 = builders.SimulatorBuilder().with_agregation_type('average').with_timeout_protocol(10)
     bs = {'asynct' : b2}
-    thread_args = (3, 1, bs)
+    thread_args = (3, 3, bs)
     final_results2 = node_step_execution(5, 25, 5, 2, bs, thread_args)
-    print(final_results1)
-    print(final_results2)
+
     async_vs_asynct(final_results1['async'], final_results2['asynct'])
 
 
@@ -451,13 +429,16 @@ if __name__ == '__main__':
     #average_vs_count_exec()
     #rounds_rmse_loss_exec()
     #casts_comparison_exec()
+    #async_vs_async_no_timeout_exec()
+    #sync_vs_async_exec()
 
     #rounds_rmse_dynamic_exec()
 
 
-    min_dif_average_exec()
-    #sync_vs_async_exec()
-    #async_vs_async_no_timeout_exec()
+    #min_dif_average_exec()
+
+
+
 
     #converge()
     
