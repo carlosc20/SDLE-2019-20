@@ -96,7 +96,7 @@ class SimulatorBuilder:
         return self
 
     ## Só usar com flownode normal!!!!
-    def with_departure_arrivel_members_event(self, numberToRemove, n_rounds, repeatable):
+    def with_departure_arrival_members_event(self, numberToRemove, n_rounds, repeatable):
         self.simulator.graph_events['departure_arrival_members'] = events.DepartureArrivalMembers(numberToRemove, n_rounds, repeatable)
         return self
 
@@ -108,7 +108,6 @@ class SimulatorBuilder:
 
     def _build_nodes_graph(self, input_graph, inputs):
         g_nodes = {}
-        g_distances = {}
         inputs_sum = 0
         
         graph = input_graph.copy()
@@ -182,34 +181,35 @@ class SimulatorBuilder:
 
 
 def main():
-    G = graphGen.randomG(5,3)
-    inputs = [1] * len(G)
+    G = graphGen.randomG(1000,3,10)
+    inputs = [0] * (len(G) -1) + [1] 
     nx.draw(G, with_labels=True)
     plt.show()
         
     sim_builder = SimulatorBuilder()
     #as an example, default is already 0
-    sim_builder.with_multicast_protocol(1)
-    sim_builder.with_loss_rate(0).with_agregation_type('average')
+    #sim_builder.with_multicast_protocol(1)
+    sim_builder.with_loss_rate(0).with_agregation_type('count')
+    sim_builder.with_confidence_value(0.01)
     #sim_builder.with_flowsums_termination()
     
     #nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)
-    sim_builder.with_self_termination_by_min_dif(50, 0.01)
-    sim_builder.with_timeout_protocol(100)
+    #sim_builder.with_self_termination_by_min_dif(50, 0.01)
+    #sim_builder.with_timeout_protocol(100)
     #inputs_by_node = dict.fromkeys(range(len(G)), 2)
     #sim_builder.with_scheduled_change_inputs_event(inputs_by_node, 5)
     #sim_builder.with_scheduled_add_members_event(1,1,1,2,False,10)
     
     sim = sim_builder.build(G, inputs)
-    t, c, r = sim.start()
+    t, c, r, y, z = sim.start()
     
     print("finished in: ",  t, " with ", c, " messages sent", " rounds: ", r)
     
-    print("Final estimates: ")
-    for n in sim.graph:
-        node = sim.graph.nodes[n]['flownode']
-        print("node: ", n, " est: ", node.local_estimate)
+    #print("Final estimates: ")
+   # for n in sim.graph:
+    #    node = sim.graph.nodes[n]['flownode']
+     #   print("node: ", n, " est: ", node.local_estimate)
     
 
 

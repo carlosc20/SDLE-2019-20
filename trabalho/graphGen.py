@@ -35,6 +35,7 @@ def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None,)
                 graph.add_edge(n, neighbour, weight=random.randint(5, 200))
             else:
                 graph.add_edge(n, neighbour, weight=w)
+            print(neighbour)
             graph.nodes[neighbour]['flownode'].addNeighbour(n)
         
     nx.set_node_attributes(graph, new_nodes, 'flownode')
