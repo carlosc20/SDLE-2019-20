@@ -247,7 +247,7 @@ class Simulator:
             le = 1 / node.local_estimate if node.local_estimate != 0 else 0
             square_error_sum += (le - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph)) 
-        print('rmse: ', rmse)
+        #print('rmse: ', rmse)
         return rmse < target_rmse
 
 
@@ -259,8 +259,10 @@ class Simulator:
                     self._addMembers(v)
                 elif k == 'remove_members':
                     self._removeMembers(v)
-                else:
+                elif k == 'change_inputs':
                     self._changeInputs(v)
+                else:
+                    self._DAMembers(v)
             if v.repeatable:
                 v.ticker = 0
 
@@ -276,11 +278,10 @@ class Simulator:
         graphGen.addNodes(self.graph, add_e.numberToAdd, add_e.numberOfConnections, add_e.input, self, add_e.w)
         self.input_sum += add_e.input * add_e.numberToAdd
 
-        #assume average
-        if self.simulator.aggregation_type == 'average':            
-            self.simulator.target_value = inputs_sum / len(graph)
-        elif self.simulator.aggregation_type == 'count':
-            self.simulator.target_value = len(graph)
+        if self.aggregation_type == 'average':            
+            self.target_value = inputs_sum / len(graph)
+        elif self.aggregation_type == 'count':
+            self.target_value = len(graph)
         else:
             print("unavailable")
             #TODO
@@ -307,5 +308,11 @@ class Simulator:
         for e in to_remove:
             self.pending.remove(e)
 
-        nx.draw(self.graph, with_labels=True)
-        plt.show()
+        #nx.draw(self.graph, with_labels=True)
+        #plt.show()
+
+    def _DAMembers(self, da_msg):
+        for n in range(da_msg.numberToRemove):
+            node = self.graph.nodes[n]['flownode']
+            node.__init__(node.id, node.neighbours, node.input)
+

@@ -12,6 +12,7 @@ import copy
 def builder_simple():
     sim_builder = builders.SimulatorBuilder()
     sim_builder.with_agregation_type('count').with_evaluated_multicast_protocol(1)
+    #sim_builder.with_departure_arrivel_members_event(2,10,False)
     # nodos ficam com resultados diferentes
     #sim_builder.with_self_termination_by_rounds(50)
     #sim_builder.with_self_termination_by_min_dif(50, 0.01)
