@@ -259,6 +259,105 @@ def casts_comparison_exec():
 
 
 
+
+
+
+
+def min_dif_average_exec():
+
+    b = builders.SimulatorBuilder().with_agregation_type('average').with_min_dif_testing(0.01)
+    bs = {'builder' : b}
+
+    thread_args = (3, 1, bs, 1)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results = node_step_execution(5, 210, 15, 2, bs, thread_args)
+    #print(final_results)
+    min_dif_average(final_results['builder'])
+
+
+
+def sync_vs_async_exec():
+
+
+    b1 = builders.SimulatorBuilder().with_agregation_type('average')
+    
+    bs = {'sync' : b1}
+    
+    thread_args = (3, 3, bs)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results_sync = node_step_execution(5, 25, 5, 2, bs, thread_args)
+
+    b2 = builders.SimulatorBuilder().with_agregation_type('average').with_timeout_protocol(10)
+    
+    bs = {'async' : b2}
+    
+    thread_args = (3, 1, bs, 5)
+
+    print("start execution")
+    #(n_min, n_max, step, n_threads, ..., ...)
+    final_results_async = node_step_execution(5, 25, 15, 2, bs, thread_args)
+
+
+    #print(final_results)
+    sync_vs_async(final_results_sync['sync'], final_results_async['async'])
+
+
+def async_vs_async_no_timeout_exec():
+
+    b1 = builders.SimulatorBuilder().with_agregation_type('average')
+    bs = {'async' : b1}
+    thread_args = (3, 3, bs)
+    final_results1 = node_step_execution(5, 25, 5, 2, bs, thread_args)
+
+    b2 = builders.SimulatorBuilder().with_agregation_type('average').with_timeout_protocol(10)
+    bs = {'asynct' : b2}
+    thread_args = (3, 3, bs)
+    final_results2 = node_step_execution(5, 25, 5, 2, bs, thread_args)
+
+    async_vs_asynct(final_results1['async'], final_results2['asynct'])
+
+
+
+def converge():
+
+    iters = 1
+    max_degree = 3
+
+    inputs = {}
+    for i in range(10):
+        inputs[i] = 1.5
+
+
+    b = builders.SimulatorBuilder().with_agregation_type('count').with_departure_arrival_members_event(10, 2000, False)
+    
+    builder = {'builder' : b}
+    
+    thread_args = (max_degree, iters, builder)
+
+    print("start execution")
+    final_results = node_step_execution(10, 15, 5, 2, builder, thread_args)
+    estimates = final_results['builder']['nodes_estimates'][0]
+    estimates = list(map(list, zip(*estimates)))
+
+    fig, ax = plt.subplots()
+    for e in estimates:
+        ax.scatter(range(len(e)), e, color="red", s=1)
+
+    ax.set_title("Estimates over time")
+    ax.set_xlabel("Rounds")
+    ax.set_ylabel("Estimates")
+
+    plt.show()
+
+
+
+
+
+
 def rounds_rmse_node_entry_exec():
 
     b = builders.SimulatorBuilder().with_agregation_type('count')
@@ -319,110 +418,22 @@ def rounds_rmse_dynamic_exec():
 #TODO
 def rounds_rmse_varying_inputs_exec():
 
-    b = builders.SimulatorBuilder().with_agregation_type('count').with_scheduled_change_inputs_event(self, input_by_node, n_rounds)
+    n = 10
+    inputs = {}
+    for i in range(n):
+        inputs[i] = 1.5
+
+    b = builders.SimulatorBuilder().with_agregation_type('average').with_scheduled_change_inputs_event(inputs, 10)
     bs = {'builder' : b}
 
-    G = graphGen.randomG(9,3,10)
-    rmses = [10, 1, 0.1, 0.01]
-    thread_args = ([G], 5, bs)
+    G = graphGen.randomG(n,3,10)
+    rmses = [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.20, 0.25, 0.5]
+    thread_args = ([G], bs)
 
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
 
     rounds_rmse_varying_inputs(final_results['builder'], rmses)
-
-
-
-def min_dif_average_exec():
-
-    b = builders.SimulatorBuilder().with_agregation_type('average').with_min_dif_testing(0.01)
-    bs = {'builder' : b}
-
-    thread_args = (3, 5, bs, 1)
-
-    print("start execution")
-    #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(6, 30, 2, 2, bs, thread_args)
-    #print(final_results)
-    min_dif_average(final_results['builder'])
-
-
-
-def sync_vs_async_exec():
-
-
-    b1 = builders.SimulatorBuilder().with_agregation_type('average')
-    
-    bs = {'sync' : b1}
-    
-    thread_args = (3, 3, bs)
-
-    print("start execution")
-    #(n_min, n_max, step, n_threads, ..., ...)
-    final_results_sync = node_step_execution(5, 25, 5, 2, bs, thread_args)
-
-    b2 = builders.SimulatorBuilder().with_agregation_type('average').with_timeout_protocol(10)
-    
-    bs = {'async' : b2}
-    
-    thread_args = (3, 3, bs, 5)
-
-    print("start execution")
-    #(n_min, n_max, step, n_threads, ..., ...)
-    final_results_async = node_step_execution(5, 25, 5, 2, bs, thread_args)
-
-
-    #print(final_results)
-    sync_vs_async(final_results_sync['sync'], final_results_async['async'])
-
-
-def async_vs_async_no_timeout_exec():
-
-    b1 = builders.SimulatorBuilder().with_agregation_type('average')
-    bs = {'async' : b1}
-    thread_args = (3, 3, bs)
-    final_results1 = node_step_execution(5, 25, 5, 2, bs, thread_args)
-
-    b2 = builders.SimulatorBuilder().with_agregation_type('average').with_timeout_protocol(10)
-    bs = {'asynct' : b2}
-    thread_args = (3, 3, bs)
-    final_results2 = node_step_execution(5, 25, 5, 2, bs, thread_args)
-
-    async_vs_asynct(final_results1['async'], final_results2['asynct'])
-
-
-
-def converge():
-
-    iters = 1
-    max_degree = 3
-
-    inputs = {}
-    for i in range(10):
-        inputs[i] = 1.5
-
-
-    b = builders.SimulatorBuilder().with_agregation_type('count').with_departure_arrival_members_event(10, 2000, False)
-    
-    builder = {'builder' : b}
-    
-    thread_args = (max_degree, iters, builder)
-
-    print("start execution")
-    final_results = node_step_execution(10, 15, 5, 2, builder, thread_args)
-    estimates = final_results['builder']['nodes_estimates'][0]
-    estimates = list(map(list, zip(*estimates)))
-
-    fig, ax = plt.subplots()
-    for e in estimates:
-        ax.scatter(range(len(e)), e, color="red", s=1)
-
-    ax.set_title("Estimates over time")
-    ax.set_xlabel("Rounds")
-    ax.set_ylabel("Estimates")
-
-    plt.show()
-
 
 
 if __name__ == '__main__': 
@@ -433,7 +444,7 @@ if __name__ == '__main__':
     #sync_vs_async_exec()
 
     #rounds_rmse_dynamic_exec()
-
+    rounds_rmse_varying_inputs_exec()
 
     #min_dif_average_exec()
 
