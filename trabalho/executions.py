@@ -112,7 +112,7 @@ def simulate_single_for_rmse(step, graph_list, inputs, sim_name, sim_builder, gl
     max_r = max_m = -1
     med_r = med_m = 0
     med_n_e = []
-    med_c_r = [0] * len(inputs)
+    med_c_r = 0
 
     for g in graph_list:
 
@@ -135,8 +135,7 @@ def simulate_single_for_rmse(step, graph_list, inputs, sim_name, sim_builder, gl
         if not med_n_e:
             med_n_e = n_e
 
-        for j in range(len(g)):
-            med_c_r[j] += c_r[j]
+        med_c_r += max(c_r)
         
         med_r += r
         med_m += m
@@ -148,7 +147,7 @@ def simulate_single_for_rmse(step, graph_list, inputs, sim_name, sim_builder, gl
     global_results[sim_name]['max_rounds'].append(max_r)
     global_results[sim_name]['min_rounds'].append(min_r)
     global_results[sim_name]['nodes_estimates'].append(med_n_e)
-    global_results[sim_name]['nodes_consecutive_rounds'].append((sum(med_c_r) / len(graph_list)) /len(graph_list[0]))
+    global_results[sim_name]['nodes_consecutive_rounds'].append(med_c_r / len(graph_list))
 
     return global_results
 
