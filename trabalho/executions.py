@@ -181,15 +181,17 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
             single_simulation[sim_name] = SingleSimulation(n)
         for i in range(iter_size):
             if sync_value is None:
-                G = graphGen.randomG(n, degree)
+                G = graphGen.preferentialG(n)
             else:
-                G = graphGen.randomG(n, degree, sync_value)
+                G = graphGen.preferentialG(n, sync_value)
 
             # mudar aqui para fazer Contagem
             
             for sim_name, sim_builder in sim_builders.items():
                 if sim_builder.simulator.aggregation_type == 'average':
-                    inputs = [random.randint(0,10)] * len(G)
+                    inputs = []
+                    for ji in range(len(G)):
+                        inputs.append(random.randint(0,10)) 
                 else:
                     inputs = [0] * (len(G) - 1) + [1]
 
