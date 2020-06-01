@@ -261,7 +261,7 @@ class Simulator:
             le = 1 / node.local_estimate if node.local_estimate != 0 else 0
             square_error_sum += (le - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph)) 
-        print('rmse: ', rmse)
+        #print('rmse: ', rmse)
         return rmse < target_rmse
 
 

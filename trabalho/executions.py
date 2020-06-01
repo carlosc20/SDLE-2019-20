@@ -8,6 +8,7 @@ import numpy as np
 import sys
 import builders
 import copy
+import random
 
 class SingleSimulation:
     def __init__(self, input_len):
@@ -42,7 +43,6 @@ class SingleSimulation:
 
         self.med_c_r += max(c_r)
 
-        print(self.iter, c_r)
         print(self.iter, self.med_c_r)
         self.iter += 1
         
@@ -161,7 +161,7 @@ def thread_execution_rmse_step(rmse_list, graph_list, sim_builders):
     for r in rmse_list:
         for sim_name, sim_builder in sim_builders.items():
             if sim_builder.simulator.aggregation_type == 'average':
-                inputs = [1] * len(graph_list[0])
+                inputs = [random.randint(0,10)] * len(graph_list[0])
             else:
                 inputs = [0] * (len(graph_list[0]) - 1) + [1]
             aux_builder = copy.deepcopy(sim_builder)
@@ -189,7 +189,7 @@ def thread_execution_nodes_step(n_list, degree, iter_size, sim_builders, sync_va
             
             for sim_name, sim_builder in sim_builders.items():
                 if sim_builder.simulator.aggregation_type == 'average':
-                    inputs = [1] * len(G)
+                    inputs = [random.randint(0,10)] * len(G)
                 else:
                     inputs = [0] * (len(G) - 1) + [1]
 
@@ -209,7 +209,6 @@ def execution(n_list, thread_function, n_threads, sim_builders, thread_args):
 
     for i in range(0, len(n_list), slice_size):
         l = n_list[i : i  + slice_size]
-        print(l)
         results.append( pool.apply_async(thread_function, args=  ((l,) + thread_args)))
 
     pool.close()

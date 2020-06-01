@@ -199,7 +199,7 @@ def average_vs_count_exec():
     
     bs = {'average' : average, 'count' : count}
     
-    thread_args = (3, 5, bs, 10) # (max degree, iters, ...)
+    thread_args = (3, 10, bs, 10) # (max degree, iters, ...)
 
     print("start execution")
     
@@ -266,13 +266,14 @@ def casts_comparison_exec():
 def min_dif_average_exec():
 
     b = builders.SimulatorBuilder().with_agregation_type('average').with_min_dif_testing(0.01)
+    b.with_confidence_value(0.0009)
     bs = {'builder' : b}
 
-    thread_args = (3, 1, bs, 1)
+    thread_args = (3, 20, bs, 1)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
-    final_results = node_step_execution(5, 210, 15, 2, bs, thread_args)
+    final_results = node_step_execution(50, 1000, 50, 2, bs, thread_args)
     #print(final_results)
     min_dif_average(final_results['builder'])
 
@@ -285,7 +286,7 @@ def sync_vs_async_exec():
     
     bs = {'sync' : b1}
     
-    thread_args = (3, 3, bs)
+    thread_args = (3, 1, bs)
 
     print("start execution")
     #(n_min, n_max, step, n_threads, ..., ...)
@@ -476,7 +477,7 @@ if __name__ == '__main__':
     #rounds_rmse_loss_exec()
     #casts_comparison_exec()
     #async_vs_async_no_timeout_exec()
-    custom_add_rem()
+    async_vs_async_no_timeout_exec()
     #converge()
     
 
