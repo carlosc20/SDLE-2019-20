@@ -49,6 +49,7 @@ class SingleSimulation:
         self.med_r += r
         self.med_m += m
 
+
     def get_results(self, step, iter_size, sim_name, global_results, n_nodes):
         global_results[sim_name]['step_axis'].append(step)
         global_results[sim_name]['med_messages'].append(self.med_m / iter_size)
