@@ -35,7 +35,10 @@ class Simulator:
 
         self.estimates_per_round = []
 
-        self.graph_events = {}
+        self.graph_events = {'add_members': [], 
+        'remove_members':[], 
+        'departure_arrival_members':[],
+        'change_inputs' : []}
 
         self.message_counter = 0
 
@@ -258,28 +261,29 @@ class Simulator:
             le = 1 / node.local_estimate if node.local_estimate != 0 else 0
             square_error_sum += (le - target_value) ** 2
         rmse = math.sqrt(square_error_sum / len(graph)) 
-        #print('rmse: ', rmse)
+        print('rmse: ', rmse)
         return rmse < target_rmse
 
 
     def _handle_events(self):
         for (k, v) in self.graph_events.items():
-            v.ticker += 1
-            if v.ticker == v.n_rounds:
-                if k == 'add_members':
-                    print("adding members")
-                    self._addMembers(v)
-                elif k == 'remove_members':
-                    print("removing members")
-                    self._removeMembers(v)
-                elif k == 'change_inputs':
-                    print("change inputs")
-                    self._changeInputs(v)
-                else:
-                    print("departure arrival")
-                    self._DAMembers(v)
-                if v.repeatable:
-                    v.ticker = 0
+            for op in v:
+                op.ticker += 1
+                if op.ticker == op.n_rounds:
+                    if k == 'add_members':
+                        print("adding members")
+                        self._addMembers(op)
+                    elif k == 'remove_members':
+                        print("removing members")
+                        self._removeMembers(op)
+                    elif k == 'change_inputs':
+                        print("change inputs")
+                        self._changeInputs(op)
+                    else:
+                        print("departure arrival")
+                        self._DAMembers(op)
+                    if op.repeatable:
+                        op.ticker = 0
 
 
     
@@ -297,7 +301,8 @@ class Simulator:
 
     #input igual para todos os nodos adicionados
     def _addMembers(self, add_e):
-        graphGen.addNodes(self.graph, add_e.numberToAdd, add_e.numberOfConnections, add_e.input, self, add_e.w)
+        print("entering size: ", (len(self.graph)))
+        self.graph = graphGen.addNodes(self.graph, add_e.numberToAdd, add_e.numberOfConnections, add_e.input, self, add_e.w)
         self.input_sum += add_e.input * add_e.numberToAdd
 
         if self.aggregation_type == 'average':            
@@ -307,9 +312,12 @@ class Simulator:
         else:
             print("unavailable")
             #TODO
+        
+        print("exiting size: ", (len(self.graph)))
 
     #só usar com grafos maiores. perigosa
     def _removeMembers(self, rem_e):
+        print("entering size: ", (len(self.graph)))
         removed = graphGen.removeNodes(self.graph, rem_e.numberToRemove) 
         
         for r in removed:
@@ -322,6 +330,7 @@ class Simulator:
         else:
             print("unavailable")
             #TODO
+        print("exiting size: ", (len(self.graph)))
 
         #remove messages to removed members
         removed_ids = [n.id for n in removed]

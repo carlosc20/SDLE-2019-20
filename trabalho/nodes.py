@@ -77,7 +77,9 @@ class FlowNode:
     
     def generate_messages(self):
         msgs = []
-        for (n, f, e) in zip(self.neighbours, self.flows.values(), self.estimates.values()):
+        for n in self.neighbours:
+            f = self.flows[n]
+            e = self.estimates[n]
             msgs.append(FlowMessage(self.id, n, f, e))
 
         return msgs

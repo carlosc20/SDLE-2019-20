@@ -87,22 +87,22 @@ class SimulatorBuilder:
 
     #(numero de nodos a adicionar, numero de conexções por nodo, input de cada nodo, ao fim de quantas rondas é ativado, se se repete, peso das conexões)
     def with_scheduled_add_members_event(self, numberToAdd, numberOfConnections, input, n_rounds, repeatable,  w=None):
-        self.simulator.graph_events['add_members'] = events.AddMembers(numberToAdd, numberOfConnections, input, n_rounds, repeatable, w)
+        self.simulator.graph_events['add_members'].append(events.AddMembers(numberToAdd, numberOfConnections, input, n_rounds, repeatable, w))
         return self
 
 
     def with_scheduled_remove_members_event(self, numberToRemove, n_rounds, repeatable):
-        self.simulator.graph_events['remove_members'] = events.RemoveMembers(numberToRemove, n_rounds, repeatable)
+        self.simulator.graph_events['remove_members'].append(events.RemoveMembers(numberToRemove, n_rounds, repeatable))
         return self
 
     ## Só usar com flownode normal!!!!
     def with_departure_arrival_members_event(self, numberToRemove, n_rounds, repeatable):
-        self.simulator.graph_events['departure_arrival_members'] = events.DepartureArrivalMembers(numberToRemove, n_rounds, repeatable)
+        self.simulator.graph_events['departure_arrival_members'].append(events.DepartureArrivalMembers(numberToRemove, n_rounds, repeatable))
         return self
 
     # input_by_node = {node:input,....}
     def with_scheduled_change_inputs_event(self, input_by_node, n_rounds):
-        self.simulator.graph_events['change_inputs'] = events.ChangeInputs(input_by_node, n_rounds)
+        self.simulator.graph_events['change_inputs'].append(events.ChangeInputs(input_by_node, n_rounds))
         return self
   
 

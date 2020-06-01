@@ -312,7 +312,7 @@ def rounds_rmse_node_entry_exec():
     print("start execution")
     final_results = rmse_step_execution(rmses, 3, bs, thread_args)
 
-    print(final_results['builder']['nodes_estimates'])
+    #print(final_results['builder']['nodes_estimates'])
 
     rounds_rmse_dynamic(final_results['builder'], rmses)
 
@@ -321,7 +321,7 @@ def rounds_rmse_node_removal_exec():
 
     b = builders.SimulatorBuilder().with_agregation_type('count')
     # TODO preencher
-    b.with_scheduled_remove_members_event(10, 20, False)
+    b.with_scheduled_remove_members_event(5, 20, False)
     bs = {'builder' : b}
 
     G = graphGen.randomG(100,3,10)
@@ -331,10 +331,9 @@ def rounds_rmse_node_removal_exec():
     print("start execution")
     final_results = rmse_step_execution(rmses, 3, bs, thread_args)
 
-    print(final_results['builder']['nodes_estimates'])
+    #print(final_results['builder']['nodes_estimates'])
 
     rounds_rmse_dynamic(final_results['builder'], rmses)
-
 
 
 def rounds_rmse_dynamic_exec():
@@ -351,7 +350,7 @@ def rounds_rmse_dynamic_exec():
     print("start execution")
     final_results = rmse_step_execution(rmses, 2, bs, thread_args)
 
-    print(final_results)
+    #print(final_results)
 
     rounds_rmse_dynamic(final_results['builder'], rmses)
 
@@ -464,6 +463,41 @@ def converge():
     plt.show()
 
 
+def custom_add_rem():
+
+    iters = 1
+    max_degree = 3
+
+    b = builders.SimulatorBuilder().with_agregation_type('count')
+    # TODO preencher
+    b.with_scheduled_remove_members_event(5, 4000, False)
+    b.with_scheduled_add_members_event(5, 1, 0, 2500, False, 10)
+    b.with_scheduled_add_members_event(5, 1, 0, 5000, False, 10)
+    b.with_scheduled_remove_members_event(10, 5500, False)
+
+
+    builder = {'builder' : b}
+    
+    thread_args = (max_degree, iters, builder)
+
+    print("start execution")
+    final_results = node_step_execution(10, 15, 5, 2, builder, thread_args)
+
+    estimates = final_results['builder']['nodes_estimates'][0]
+    estimates = list(map(list, zip(*estimates)))
+
+    fig, ax = plt.subplots()
+    for e in estimates:
+        ax.scatter(range(len(e)), e, color="red", s=1)
+
+    ax.set_title("Estimates over time")
+    ax.set_xlabel("Rounds")
+    ax.set_ylabel("Estimates")
+
+    plt.show()
+
+
+
 
 if __name__ == '__main__': 
     #average_vs_count_exec()
@@ -473,8 +507,8 @@ if __name__ == '__main__':
     #min_dif_average_exec()
     #sync_vs_async_exec()
     #async_vs_async_no_timeout_exec()
-
-    converge()
+    custom_add_rem()
+    #converge()
     
 
 

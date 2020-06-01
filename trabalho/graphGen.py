@@ -2,24 +2,22 @@ import networkx as nx
 import random
 import nodes
 import builders
+import copy
 
 
 
-def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None,):
+def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None):
     n_nodes = len(graph)
     new_nodes = {}
     sim_builder = builders.SimulatorBuilder()
     sim_builder.build_with_simulator(simulator)
     #for n in graph.nodes:
      #   new_nodes[n] = graph.nodes[n]['flownode']
-
-    for n in range(n_nodes, n_nodes + numberToAdd):
-        
+    aux_nodes = copy.deepcopy(list(graph.nodes))
+    variable = random.randint(n_nodes, n_nodes * 200)
+    for n in range(n_nodes + variable, n_nodes + numberToAdd + variable):
+        print(n)
         connections = []
-        aux_nodes = list(graph.nodes)
-
-        if n > n_nodes:
-            aux_nodes.remove(n-1)
 
         for i in range(numberOfConnections):
             a = random.choice(aux_nodes)
@@ -27,6 +25,7 @@ def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None,)
             aux_nodes.remove(a)
 
         graph.add_node(n)
+        print(len(graph))
         new_nodes[n] = sim_builder.buildNode(n, input, connections)
 
         for neighbour in connections:
@@ -35,21 +34,21 @@ def addNodes(graph, numberToAdd, numberOfConnections, input, simulator, w=None,)
                 graph.add_edge(n, neighbour, weight=random.randint(5, 200))
             else:
                 graph.add_edge(n, neighbour, weight=w)
-            print(neighbour)
             graph.nodes[neighbour]['flownode'].addNeighbour(n)
         
     nx.set_node_attributes(graph, new_nodes, 'flownode')
 
+    return graph
 
 def removeNodes(graph, numToRemove):
     aux_nodes = list(graph.nodes)
     removed = []
 
-    max_iter = 25
+    max_iter = 10000
    
     for n in range(numToRemove):
         i = 0
-        while(i <= 25):
+        while(i <= max_iter):
             a = random.choice(aux_nodes)
 
             node = graph.nodes[a]['flownode']
@@ -58,12 +57,10 @@ def removeNodes(graph, numToRemove):
                 graph.remove_node(a)
                 aux_nodes.remove(a)
                 removed.append(node)
+                for nei in node.neighbours:
+                    graph.nodes[nei]['flownode'].removeNeighbour(a)
                 break
             i += 1
-        if i <= max_iter:
-            for nei in node.neighbours:
-                graph.nodes[nei]['flownode'].removeNeighbour(a)
-    
     return removed
 
 
